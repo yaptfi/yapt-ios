@@ -49,6 +49,24 @@ class APIClient {
 
     // MARK: - Request Methods
 
+    /// Build a URLRequest from an APIEndpoint
+    /// Used for SSE streaming and custom request handling
+    func buildRequest(for endpoint: APIEndpoint) throws -> URLRequest {
+        guard let url = endpoint.url() else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = endpoint.method.rawValue
+        request.httpBody = endpoint.body
+
+        // Set headers
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        return request
+    }
+
     /// Perform a request and decode the response
     func request<T: Decodable>(_ endpoint: APIEndpoint) -> AnyPublisher<T, APIError> {
         guard let url = endpoint.url() else {
@@ -84,8 +102,8 @@ class APIClient {
             .eraseToAnyPublisher()
     }
 
-    /// Perform a request without decoding (for empty responses)
-    func requestVoid(_ endpoint: APIEndpoint) -> AnyPublisher<Void, APIError> {
+    /// Perform a request without decoding (for empty responses like DELETE)
+    func request(_ endpoint: APIEndpoint) -> AnyPublisher<Void, APIError> {
         guard let url = endpoint.url() else {
             return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
         }

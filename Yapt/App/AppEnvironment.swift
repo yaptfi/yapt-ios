@@ -12,6 +12,7 @@ import Combine
 class AppEnvironment: ObservableObject {
     // MARK: - Core Services
     let apiClient: APIClient
+    let sseClient: SSEClient
     let sessionManager: SessionManager
 
     // MARK: - Feature Services
@@ -23,12 +24,13 @@ class AppEnvironment: ObservableObject {
     init() {
         // Initialize core services
         self.apiClient = APIClient()
+        self.sseClient = SSEClient()
         self.sessionManager = SessionManager()
 
         // Initialize feature services
         self.authService = AuthService(apiClient: apiClient, sessionManager: sessionManager)
         self.portfolioService = PortfolioService(apiClient: apiClient)
         self.positionService = PositionService(apiClient: apiClient)
-        self.walletService = WalletService(apiClient: apiClient)
+        self.walletService = WalletService(apiClient: apiClient, sseClient: sseClient)
     }
 }
