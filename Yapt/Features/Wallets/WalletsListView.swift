@@ -59,8 +59,15 @@ struct WalletsListView: View {
         List {
             Section {
                 ForEach(viewModel.wallets) { wallet in
-                    WalletRow(wallet: wallet)
+                    NavigationLink(destination: WalletDetailView(
+                        wallet: wallet,
+                        walletService: appEnvironment.walletService,
+                        positionService: appEnvironment.positionService
+                    )) {
+                        WalletRow(wallet: wallet)
+                    }
                 }
+                .onDelete(perform: deleteWallets)
             } header: {
                 Text("Tracked Wallets (\(viewModel.wallets.count))")
             }
@@ -75,6 +82,13 @@ struct WalletsListView: View {
         }
         .refreshable {
             viewModel.refresh()
+        }
+    }
+
+    private func deleteWallets(at offsets: IndexSet) {
+        for index in offsets {
+            let wallet = viewModel.wallets[index]
+            viewModel.deleteWallet(wallet)
         }
     }
 

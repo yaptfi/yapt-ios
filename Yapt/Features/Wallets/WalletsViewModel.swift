@@ -74,4 +74,32 @@ class WalletsViewModel: ObservableObject {
     func clearError() {
         errorMessage = nil
     }
+
+    // MARK: - Delete Wallet
+
+    func deleteWallet(_ wallet: Wallet) {
+        Logger.ui.info("Deleting wallet: \(wallet.address)")
+
+        // Optimistically remove from UI
+        wallets.removeAll { $0.id == wallet.id }
+
+        walletService.deleteWallet(walletId: wallet.id)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case .failure(let error) = completion {
+                        Logger.ui.error("Failed to delete wallet: \(error.localizedDescription)")
+                        self?.errorMessage = error.localizedDescription
+                        // Reload wallets on error to restore state
+                        self?.refresh()
+                    } else {
+                        Logger.ui.info("Wallet deleted successfully")
+                    }
+                },
+                receiveValue: { _ in
+                    // Success - wallet already removed optimistically
+                }
+            )
+            .store(in: &cancellables)
+    }
 }
