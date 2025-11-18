@@ -28,7 +28,6 @@
 		F79219042ECC9022000DA6D7 /* YaptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F792190E2ECC9022000DA6D7 /* YaptUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7A274032ECC91BD007D3DFA /* Yapt.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Yapt.xcodeproj; sourceTree = "<group>"; };
-		F7A274592ECC9238007D3DFA /* Yapt.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Yapt.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -95,13 +94,6 @@
 			sourceTree = "<group>";
 		};
 		F7A274042ECC91BD007D3DFA /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		F7A2745A2ECC9238007D3DFA /* Products */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -215,10 +207,6 @@
 			productRefGroup = F79218F82ECC9021000DA6D7 /* Products */;
 			projectDirPath = "";
 			projectReferences = (
-				{
-					ProductGroup = F7A2745A2ECC9238007D3DFA /* Products */;
-					ProjectRef = F7A274592ECC9238007D3DFA /* Yapt.xcodeproj */;
-				},
 				{
 					ProductGroup = F7A274042ECC91BD007D3DFA /* Products */;
 					ProjectRef = F7A274032ECC91BD007D3DFA /* Yapt.xcodeproj */;
