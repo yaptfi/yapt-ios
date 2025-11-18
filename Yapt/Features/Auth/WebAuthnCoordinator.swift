@@ -22,11 +22,30 @@ class WebAuthnCoordinator: NSObject, ObservableObject {
 
             // Decode challenge
             guard let challengeData = options.challenge.base64URLDecoded() else {
+                Logger.auth.error("Failed to decode challenge from base64URL")
                 continuation.resume(throwing: WebAuthnError.invalidChallenge)
                 return
             }
 
             let rpID = options.rpId ?? Constants.WebAuthn.rpID
+
+            // Debug logging for backend options
+            Logger.auth.info("=== WebAuthn Authentication Debug ===")
+            Logger.auth.info("RP ID: \(rpID)")
+            Logger.auth.info("Challenge length: \(challengeData.count) bytes")
+            Logger.auth.info("Timeout: \(options.timeout ?? 0) ms")
+            Logger.auth.info("User verification: \(options.userVerification ?? "not specified")")
+
+            // CRITICAL: Log allowCredentials to see if backend is filtering
+            if let allowedCreds = options.allowCredentials {
+                Logger.auth.info("allowCredentials count: \(allowedCreds.count)")
+                for (index, cred) in allowedCreds.enumerated() {
+                    Logger.auth.info("  Credential \(index): type=\(cred.type), id=\(cred.id.prefix(20))..., transports=\(cred.transports ?? [])")
+                }
+            } else {
+                Logger.auth.info("allowCredentials: nil (any passkey allowed)")
+            }
+            Logger.auth.info("=====================================")
 
             // Create the provider
             let provider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpID)
@@ -53,7 +72,7 @@ class WebAuthnCoordinator: NSObject, ObservableObject {
             controller.delegate = self
             controller.presentationContextProvider = self
 
-            Logger.auth.info("Starting passkey authentication for RP: \(rpID)")
+            Logger.auth.info("Calling ASAuthorizationController.performRequests() - passkey sheet should appear now")
             controller.performRequests()
         }
     }
@@ -90,9 +109,39 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
         didCompleteWithError error: Error
     ) {
         Task { @MainActor in
-            Logger.auth.error("Passkey authentication failed: \(error.localizedDescription)")
+            Logger.auth.error("=== Passkey Authentication Error ===")
+            Logger.auth.error("Error: \(error.localizedDescription)")
+            Logger.auth.error("Error domain: \((error as NSError).domain)")
+            Logger.auth.error("Error code: \((error as NSError).code)")
 
             let authError = error as? ASAuthorizationError
+            if let authError = authError {
+                Logger.auth.error("ASAuthorizationError code: \(authError.code.rawValue)")
+
+                switch authError.code {
+                case .canceled:
+                    Logger.auth.info("User canceled the passkey prompt")
+                case .failed:
+                    Logger.auth.error("Passkey authentication failed - possible reasons:")
+                    Logger.auth.error("  - No passkeys available for this RP ID")
+                    Logger.auth.error("  - Passkey provider (1Password/iCloud) not configured")
+                    Logger.auth.error("  - Associated Domains not validated")
+                case .notHandled:
+                    Logger.auth.error("Passkey request not handled by system")
+                case .unknown:
+                    Logger.auth.error("Unknown passkey error")
+                case .invalidResponse:
+                    Logger.auth.error("Invalid response from passkey provider")
+                case .notInteractive:
+                    Logger.auth.error("Passkey request requires user interaction")
+                case .matchedExcludedCredential:
+                    Logger.auth.error("Matched excluded credential")
+                @unknown default:
+                    Logger.auth.error("Unrecognized ASAuthorization error: \(authError.code.rawValue)")
+                }
+            }
+            Logger.auth.error("====================================")
+
             switch authError?.code {
             case .canceled:
                 continuation?.resume(throwing: WebAuthnError.userCanceled)
