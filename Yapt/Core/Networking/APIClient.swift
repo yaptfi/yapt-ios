@@ -61,7 +61,9 @@ class APIClient {
         request.httpBody = endpoint.body
 
         // Set headers
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if endpoint.body != nil {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         return request
@@ -78,7 +80,9 @@ class APIClient {
         request.httpBody = endpoint.body
 
         // Set headers
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if endpoint.body != nil {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         Logger.network.debug("[\(endpoint.method.rawValue)] \(url.absoluteString)")
