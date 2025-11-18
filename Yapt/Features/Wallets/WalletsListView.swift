@@ -10,6 +10,7 @@ import SwiftUI
 struct WalletsListView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: WalletsViewModel
+    @State private var showingAddWallet = false
 
     init(walletService: WalletService) {
         _viewModel = StateObject(wrappedValue: WalletsViewModel(
@@ -32,6 +33,21 @@ struct WalletsListView: View {
             }
             .navigationTitle("Wallets")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showingAddWallet = true
+                    }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddWallet, onDismiss: {
+                // Refresh wallet list after adding a wallet
+                viewModel.refresh()
+            }) {
+                AddWalletView(walletService: appEnvironment.walletService)
+            }
             .onAppear {
                 viewModel.loadWallets()
             }
@@ -47,10 +63,6 @@ struct WalletsListView: View {
                 }
             } header: {
                 Text("Tracked Wallets (\(viewModel.wallets.count))")
-            } footer: {
-                Text("Phase 2 will add the ability to add and remove wallets")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
 
             if let errorMessage = viewModel.errorMessage {
@@ -77,8 +89,18 @@ struct WalletsListView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-            Button("Load Wallets") {
-                viewModel.loadWallets()
+            Button(action: {
+                showingAddWallet = true
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add Wallet")
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
         }
         .padding()
