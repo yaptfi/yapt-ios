@@ -66,7 +66,7 @@ struct WalletDetailView: View {
             // Positions section
             Section {
                 ForEach(viewModel.positions) { position in
-                    WalletPositionRow(position: position)
+                    PositionRow(position: position)
                 }
             } header: {
                 Text("Positions (\(viewModel.positions.count))")
@@ -188,64 +188,6 @@ struct WalletDetailView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Wallet Position Row
-struct WalletPositionRow: View {
-    let position: Position
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Display name
-            Text(position.displayName)
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            // Protocol and measure method
-            HStack(spacing: 12) {
-                Label(position.measureMethod.rawValue.capitalized, systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                if position.hasAPY, let apy = position.apy {
-                    Text("\(apy.asPercentage()) APY")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                } else if position.isRewardBased {
-                    Text("Rewards-based")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                }
-            }
-
-            // Value and daily income
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Value")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text(position.valueUsd.asCurrency())
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Daily Income")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text(position.estDailyUsd.asCurrency())
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.green)
-                        .monospacedDigit()
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
 }
 

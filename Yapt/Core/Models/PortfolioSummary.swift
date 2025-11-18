@@ -7,6 +7,8 @@
 
 import Foundation
 
+// MARK: - Portfolio Summary
+
 struct PortfolioSummary: Codable, Equatable {
     let asOf: Date
     let totalValueUsd: Double
@@ -20,9 +22,37 @@ struct PortfolioSummary: Codable, Equatable {
     }
 }
 
-// MARK: - Portfolio Position (lighter than full Position model)
-/// Position data in portfolio summary - subset of full Position model
-struct PortfolioPosition: Codable, Equatable, Identifiable {
+// MARK: - Position Display Protocol
+/// Shared interface for position-like objects that can be displayed in UI
+protocol PositionDisplayable {
+    var id: UUID { get }
+    var displayName: String { get }
+    var measureMethod: MeasureMethod { get }
+    var valueUsd: Double { get }
+    var countingMode: CountingMode { get }
+    var estDailyUsd: Double { get }
+    var estMonthlyUsd: Double { get }
+    var estYearlyUsd: Double { get }
+    var apy: Double? { get }
+    var apy7d: Double? { get }
+    var apy30d: Double? { get }
+    var absoluteYield: AbsoluteYield? { get }
+}
+
+extension PositionDisplayable {
+    var isRewardBased: Bool {
+        measureMethod.isRewardBased
+    }
+
+    var hasAPY: Bool {
+        apy != nil && !isRewardBased
+    }
+}
+
+// MARK: - Portfolio Position
+/// Lightweight position data from portfolio summary endpoint
+/// Subset of full Position model - doesn't include walletId, baseAsset, lastUpdated
+struct PortfolioPosition: Codable, Equatable, Identifiable, PositionDisplayable {
     let id: UUID
     let displayName: String
     let measureMethod: MeasureMethod
@@ -31,20 +61,8 @@ struct PortfolioPosition: Codable, Equatable, Identifiable {
     let estDailyUsd: Double
     let estMonthlyUsd: Double
     let estYearlyUsd: Double
-
-    // APY fields - optional for reward-based positions
     let apy: Double?
     let apy7d: Double?
     let apy30d: Double?
-
-    // Absolute yield - only for reward-based positions
     let absoluteYield: AbsoluteYield?
-
-    var isRewardBased: Bool {
-        measureMethod.isRewardBased
-    }
-
-    var hasAPY: Bool {
-        apy != nil && !isRewardBased
-    }
 }

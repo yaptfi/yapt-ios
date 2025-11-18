@@ -28,7 +28,9 @@ enum MeasureMethod: String, Codable {
 }
 
 // MARK: - Position Model
-struct Position: Codable, Identifiable, Equatable {
+/// Full position model from /api/positions endpoint
+/// Includes additional fields: walletId, baseAsset, lastUpdated
+struct Position: Codable, Identifiable, Equatable, PositionDisplayable {
     let id: UUID
     let walletId: UUID
     let displayName: String
@@ -51,13 +53,7 @@ struct Position: Codable, Identifiable, Equatable {
     // Absolute yield - only present for reward-based positions
     let absoluteYield: AbsoluteYield?
 
-    var isRewardBased: Bool {
-        measureMethod.isRewardBased
-    }
-
-    var hasAPY: Bool {
-        apy != nil && !isRewardBased
-    }
+    // PositionDisplayable conformance provides isRewardBased and hasAPY
 }
 
 // MARK: - Nested Types

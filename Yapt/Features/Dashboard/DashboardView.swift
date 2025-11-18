@@ -184,8 +184,9 @@ struct SmallMetricCard: View {
     }
 }
 
-struct PositionRow: View {
-    let position: PortfolioPosition
+/// Generic position row that works with any PositionDisplayable
+struct PositionRow<P: PositionDisplayable>: View {
+    let position: P
 
     var body: some View {
         HStack {
