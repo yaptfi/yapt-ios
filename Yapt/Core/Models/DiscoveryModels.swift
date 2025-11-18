@@ -19,7 +19,7 @@ enum DiscoveryEventType: String, Codable {
     case ensResolved = "ens_resolved"
     case protocolStart = "protocol_start"
     case protocolComplete = "protocol_complete"
-    case positionsFound = "positions_found"
+    case positionFound = "position_found"  // Singular - one position at a time
     case complete = "complete"
     case error = "error"
 }
@@ -37,9 +37,10 @@ struct DiscoveryEventData: Codable, Equatable {
     let index: Int?
     let total: Int?
 
-    // Positions found
-    let count: Int?
-    let positions: [DiscoveredPosition]?
+    // Position found (individual position data)
+    let displayName: String?
+    let baseAsset: String?
+    let valueUsd: Double?
 
     // Completion
     let walletsCreated: Int?
@@ -49,13 +50,6 @@ struct DiscoveryEventData: Codable, Equatable {
     // Error
     let message: String?
     let code: String?
-}
-
-// Lightweight position info in SSE discovery events
-struct DiscoveredPosition: Codable, Equatable {
-    let `protocol`: String
-    let displayName: String
-    let valueUsd: Double
 }
 
 // MARK: - Discovery Progress

@@ -178,18 +178,22 @@ class AddWalletViewModel: ObservableObject {
                 Logger.ui.debug("Protocol complete: \(index)/\(currentProgress.protocolsTotal)")
             }
 
-        case .positionsFound:
-            // Update positions found count
-            if let count = event.data.count, let currentProgress = self.progress {
+        case .positionFound:
+            // Increment positions found count (one position at a time)
+            if let currentProgress = self.progress {
+                let newCount = currentProgress.positionsFound + 1
                 self.progress = DiscoveryProgress(
-                    status: "Found \(count) positions",
+                    status: currentProgress.currentProtocol.map { "Scanning \($0)..." } ?? "Scanning...",
                     currentProtocol: currentProgress.currentProtocol,
                     protocolsCompleted: currentProgress.protocolsCompleted,
                     protocolsTotal: currentProgress.protocolsTotal,
-                    positionsFound: count,
+                    positionsFound: newCount,
                     ensName: currentProgress.ensName
                 )
-                Logger.ui.info("Positions found: \(count)")
+
+                if let displayName = event.data.displayName {
+                    Logger.ui.debug("Position found: \(displayName) (\(newCount) total)")
+                }
             }
 
         case .complete:
