@@ -15,62 +15,66 @@ struct DiscoveryEvent: Codable, Equatable {
 }
 
 enum DiscoveryEventType: String, Codable {
-    case progress = "progress"
+    case start = "start"
+    case ensResolved = "ens_resolved"
+    case protocolStart = "protocol_start"
+    case protocolComplete = "protocol_complete"
+    case positionsFound = "positions_found"
     case complete = "complete"
     case error = "error"
 }
 
 struct DiscoveryEventData: Codable, Equatable {
-    // Progress fields
-    let status: String?
-    let currentChain: String?
-    let chainsCompleted: Int?
-    let chainsTotal: Int?
-    let positionsFound: Int?
+    // Start event
+    let totalProtocols: Int?
 
-    // Completion fields
+    // ENS resolution
+    let ensName: String?
+    let address: String?
+
+    // Protocol progress
+    let `protocol`: String?
+    let index: Int?
+    let total: Int?
+
+    // Positions found
+    let count: Int?
+    let positions: [DiscoveredPosition]?
+
+    // Completion
     let walletsCreated: Int?
     let positionsCreated: Int?
     let totalValueUsd: Double?
 
-    // Error fields
+    // Error
     let message: String?
     let code: String?
+}
 
-    // ENS resolution
-    let ensName: String?
-    let ensResolved: Bool?
+// Lightweight position info in SSE discovery events
+struct DiscoveredPosition: Codable, Equatable {
+    let `protocol`: String
+    let displayName: String
+    let valueUsd: Double
 }
 
 // MARK: - Discovery Progress
 /// UI-friendly representation of discovery progress
 struct DiscoveryProgress: Equatable {
     let status: String
-    let currentChain: String?
-    let chainsCompleted: Int
-    let chainsTotal: Int
+    let currentProtocol: String?
+    let protocolsCompleted: Int
+    let protocolsTotal: Int
     let positionsFound: Int
     let ensName: String?
 
     var progressPercentage: Double {
-        guard chainsTotal > 0 else { return 0 }
-        return Double(chainsCompleted) / Double(chainsTotal)
+        guard protocolsTotal > 0 else { return 0 }
+        return Double(protocolsCompleted) / Double(protocolsTotal)
     }
 
     var isComplete: Bool {
-        chainsCompleted >= chainsTotal && chainsTotal > 0
-    }
-
-    /// Create from SSE event data
-    static func from(eventData: DiscoveryEventData) -> DiscoveryProgress {
-        return DiscoveryProgress(
-            status: eventData.status ?? "Processing...",
-            currentChain: eventData.currentChain,
-            chainsCompleted: eventData.chainsCompleted ?? 0,
-            chainsTotal: eventData.chainsTotal ?? 0,
-            positionsFound: eventData.positionsFound ?? 0,
-            ensName: eventData.ensName
-        )
+        protocolsCompleted >= protocolsTotal && protocolsTotal > 0
     }
 }
 

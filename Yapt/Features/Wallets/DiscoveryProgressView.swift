@@ -38,19 +38,19 @@ struct DiscoveryProgressView: View {
 
                 // Progress details
                 VStack(spacing: 12) {
-                    if let currentChain = progress.currentChain {
+                    if let currentProtocol = progress.currentProtocol {
                         progressRow(
                             icon: "link",
-                            label: "Current Chain",
-                            value: currentChain,
+                            label: "Current Protocol",
+                            value: currentProtocol,
                             valueColor: .blue
                         )
                     }
 
                     progressRow(
                         icon: "network",
-                        label: "Chains Scanned",
-                        value: "\(progress.chainsCompleted) / \(progress.chainsTotal)"
+                        label: "Protocols Scanned",
+                        value: "\(progress.protocolsCompleted) / \(progress.protocolsTotal)"
                     )
 
                     progressRow(
@@ -85,11 +85,11 @@ struct DiscoveryProgressView: View {
                             .easeInOut(duration: 0.6)
                             .repeatForever()
                             .delay(Double(index) * 0.2),
-                            value: progress.chainsCompleted
+                            value: progress.protocolsCompleted
                         )
                 }
 
-                Text("Scanning blockchains...")
+                Text("Scanning protocols...")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -128,7 +128,7 @@ struct DiscoveryProgressView: View {
         let pulseScale: CGFloat = 1.5
 
         // Simple alternating animation based on progress changes
-        return (progress.chainsCompleted + index) % 2 == 0 ? baseScale : pulseScale
+        return (progress.protocolsCompleted + index) % 2 == 0 ? baseScale : pulseScale
     }
 }
 
@@ -136,20 +136,20 @@ struct DiscoveryProgressView: View {
     VStack(spacing: 20) {
         // Early progress
         DiscoveryProgressView(progress: DiscoveryProgress(
-            status: "Scanning Ethereum mainnet",
-            currentChain: "Ethereum",
-            chainsCompleted: 2,
-            chainsTotal: 10,
+            status: "Scanning Aave v3",
+            currentProtocol: "Aave v3",
+            protocolsCompleted: 2,
+            protocolsTotal: 20,
             positionsFound: 3,
             ensName: "vitalik.eth"
         ))
 
         // Mid progress
         DiscoveryProgressView(progress: DiscoveryProgress(
-            status: "Scanning Polygon",
-            currentChain: "Polygon",
-            chainsCompleted: 5,
-            chainsTotal: 10,
+            status: "Scanning Compound",
+            currentProtocol: "Compound",
+            protocolsCompleted: 10,
+            protocolsTotal: 20,
             positionsFound: 12,
             ensName: nil
         ))
@@ -157,9 +157,9 @@ struct DiscoveryProgressView: View {
         // Near complete
         DiscoveryProgressView(progress: DiscoveryProgress(
             status: "Finalizing results",
-            currentChain: nil,
-            chainsCompleted: 9,
-            chainsTotal: 10,
+            currentProtocol: nil,
+            protocolsCompleted: 18,
+            protocolsTotal: 20,
             positionsFound: 25,
             ensName: nil
         ))

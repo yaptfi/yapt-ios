@@ -120,12 +120,77 @@ class AddWalletViewModel: ObservableObject {
 
     private func handleDiscoveryEvent(_ event: DiscoveryEvent) {
         switch event.type {
-        case .progress:
-            // Update progress
-            let newProgress = DiscoveryProgress.from(eventData: event.data)
-            self.progress = newProgress
+        case .start:
+            // Initialize progress with total protocols
+            if let total = event.data.totalProtocols {
+                self.progress = DiscoveryProgress(
+                    status: "Starting discovery...",
+                    currentProtocol: nil,
+                    protocolsCompleted: 0,
+                    protocolsTotal: total,
+                    positionsFound: 0,
+                    ensName: nil
+                )
+                Logger.ui.info("Discovery started: \(total) protocols to scan")
+            }
 
-            Logger.ui.debug("Discovery progress: \(newProgress.chainsCompleted)/\(newProgress.chainsTotal) chains, \(newProgress.positionsFound) positions")
+        case .ensResolved:
+            // Update ENS name if resolved
+            if let ensName = event.data.ensName, let currentProgress = self.progress {
+                self.progress = DiscoveryProgress(
+                    status: "ENS resolved: \(ensName)",
+                    currentProtocol: currentProgress.currentProtocol,
+                    protocolsCompleted: currentProgress.protocolsCompleted,
+                    protocolsTotal: currentProgress.protocolsTotal,
+                    positionsFound: currentProgress.positionsFound,
+                    ensName: ensName
+                )
+                Logger.ui.info("ENS resolved: \(ensName)")
+            }
+
+        case .protocolStart:
+            // Update current protocol being scanned
+            if let protocolName = event.data.`protocol`,
+               let index = event.data.index,
+               let currentProgress = self.progress {
+                self.progress = DiscoveryProgress(
+                    status: "Scanning \(protocolName)...",
+                    currentProtocol: protocolName,
+                    protocolsCompleted: index - 1,
+                    protocolsTotal: currentProgress.protocolsTotal,
+                    positionsFound: currentProgress.positionsFound,
+                    ensName: currentProgress.ensName
+                )
+                Logger.ui.debug("Protocol start: \(protocolName) (\(index)/\(currentProgress.protocolsTotal))")
+            }
+
+        case .protocolComplete:
+            // Increment completed count
+            if let index = event.data.index, let currentProgress = self.progress {
+                self.progress = DiscoveryProgress(
+                    status: currentProgress.currentProtocol.map { "\($0) complete" } ?? "Protocol complete",
+                    currentProtocol: currentProgress.currentProtocol,
+                    protocolsCompleted: index,
+                    protocolsTotal: currentProgress.protocolsTotal,
+                    positionsFound: currentProgress.positionsFound,
+                    ensName: currentProgress.ensName
+                )
+                Logger.ui.debug("Protocol complete: \(index)/\(currentProgress.protocolsTotal)")
+            }
+
+        case .positionsFound:
+            // Update positions found count
+            if let count = event.data.count, let currentProgress = self.progress {
+                self.progress = DiscoveryProgress(
+                    status: "Found \(count) positions",
+                    currentProtocol: currentProgress.currentProtocol,
+                    protocolsCompleted: currentProgress.protocolsCompleted,
+                    protocolsTotal: currentProgress.protocolsTotal,
+                    positionsFound: count,
+                    ensName: currentProgress.ensName
+                )
+                Logger.ui.info("Positions found: \(count)")
+            }
 
         case .complete:
             // Extract final result
