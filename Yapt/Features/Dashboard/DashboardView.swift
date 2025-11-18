@@ -185,7 +185,7 @@ struct SmallMetricCard: View {
 }
 
 struct PositionRow: View {
-    let position: Position
+    let position: PortfolioPosition
 
     var body: some View {
         HStack {
