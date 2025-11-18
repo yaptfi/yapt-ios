@@ -128,21 +128,26 @@ extension SSEClient: URLSessionDataDelegate {
             return
         }
 
+        // Log synchronously
+        let statusCode = httpResponse.statusCode
+        let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
+
+        // Check status code and content type
+        if statusCode != 200 {
+            Task { @MainActor in
+                Logger.network.error("SSE stream failed with status \(statusCode)")
+                eventSubject.send(completion: .failure(.serverError(statusCode, "SSE connection failed")))
+            }
+            completionHandler(.cancel)
+            return
+        }
+
         Task { @MainActor in
-            Logger.network.info("SSE stream connected: status \(httpResponse.statusCode)")
+            Logger.network.info("SSE stream connected: status \(statusCode)")
 
             // Verify content type
-            if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type"),
-               !contentType.contains("text/event-stream") {
+            if let contentType = contentType, !contentType.contains("text/event-stream") {
                 Logger.network.warning("Unexpected content type for SSE: \(contentType)")
-            }
-
-            // Check status code
-            if httpResponse.statusCode != 200 {
-                Logger.network.error("SSE stream failed with status \(httpResponse.statusCode)")
-                eventSubject.send(completion: .failure(.serverError(httpResponse.statusCode, "SSE connection failed")))
-                completionHandler(.cancel)
-                return
             }
         }
 

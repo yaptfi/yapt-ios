@@ -71,7 +71,8 @@ class WalletService {
                 .eraseToAnyPublisher()
         }
 
-        let endpoint = APIEndpoint(path: "/api/wallets", method: .post, body: bodyData)
+        // Use /discover endpoint for SSE streaming
+        let endpoint = APIEndpoint(path: "/api/wallets/discover", method: .post, body: bodyData)
 
         // Build URLRequest for SSE streaming
         guard let urlRequest = try? apiClient.buildRequest(for: endpoint) else {
@@ -126,7 +127,8 @@ class WalletService {
     /// - Parameter walletId: ID of wallet to rescan
     /// - Returns: Publisher that emits DiscoveryEvent objects as they arrive
     func rescanWallet(walletId: UUID) -> AnyPublisher<DiscoveryEvent, APIError> {
-        let endpoint = APIEndpoint(path: "/api/wallets/\(walletId)/rescan", method: .post)
+        // Use /scan endpoint for SSE streaming
+        let endpoint = APIEndpoint(path: "/api/wallets/\(walletId)/scan", method: .post)
 
         // Build URLRequest for SSE streaming
         guard let urlRequest = try? apiClient.buildRequest(for: endpoint) else {
