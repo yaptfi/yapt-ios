@@ -11,9 +11,9 @@ struct DashboardView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: DashboardViewModel
 
-    init() {
+    init(portfolioService: PortfolioService) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
-            portfolioService: PortfolioService(apiClient: APIClient())
+            portfolioService: portfolioService
         ))
     }
 
@@ -33,9 +33,7 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                let vm = DashboardViewModel(portfolioService: appEnvironment.portfolioService)
-                _viewModel.wrappedValue = vm
-                vm.loadSummary()
+                viewModel.loadSummary()
             }
         }
     }
@@ -228,6 +226,7 @@ struct PositionRow: View {
 }
 
 #Preview {
-    DashboardView()
-        .environmentObject(AppEnvironment())
+    let env = AppEnvironment()
+    return DashboardView(portfolioService: env.portfolioService)
+        .environmentObject(env)
 }

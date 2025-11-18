@@ -12,9 +12,9 @@ struct SettingsView: View {
     @EnvironmentObject var sessionManager: SessionManager
     @StateObject private var viewModel: SettingsViewModel
 
-    init() {
+    init(authService: AuthService) {
         _viewModel = StateObject(wrappedValue: SettingsViewModel(
-            authService: AuthService(apiClient: APIClient(), sessionManager: SessionManager())
+            authService: authService
         ))
     }
 
@@ -128,9 +128,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .task {
-                let vm = SettingsViewModel(authService: appEnvironment.authService)
-                _viewModel.wrappedValue = vm
-                await vm.loadUser()
+                await viewModel.loadUser()
             }
         }
     }
@@ -145,7 +143,8 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView()
-        .environmentObject(AppEnvironment())
-        .environmentObject(SessionManager())
+    let env = AppEnvironment()
+    return SettingsView(authService: env.authService)
+        .environmentObject(env)
+        .environmentObject(env.sessionManager)
 }

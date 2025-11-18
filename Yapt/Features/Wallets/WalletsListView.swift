@@ -11,9 +11,9 @@ struct WalletsListView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: WalletsViewModel
 
-    init() {
+    init(walletService: WalletService) {
         _viewModel = StateObject(wrappedValue: WalletsViewModel(
-            walletService: WalletService(apiClient: APIClient())
+            walletService: walletService
         ))
     }
 
@@ -33,9 +33,7 @@ struct WalletsListView: View {
             .navigationTitle("Wallets")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                let vm = WalletsViewModel(walletService: appEnvironment.walletService)
-                _viewModel.wrappedValue = vm
-                vm.loadWallets()
+                viewModel.loadWallets()
             }
         }
     }
@@ -151,6 +149,7 @@ struct WalletRow: View {
 }
 
 #Preview {
-    WalletsListView()
-        .environmentObject(AppEnvironment())
+    let env = AppEnvironment()
+    return WalletsListView(walletService: env.walletService)
+        .environmentObject(env)
 }

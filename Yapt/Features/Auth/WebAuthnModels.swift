@@ -33,26 +33,12 @@ struct AuthenticationResponseJSON: Codable {
     let rawId: String  // base64url
     let response: AuthenticatorAssertionResponse
     let type: String  // "public-key"
-    let clientExtensionResults: [String: Any]?
-
-    enum CodingKeys: String, CodingKey {
-        case id, rawId, response, type, clientExtensionResults
-    }
 
     init(id: String, rawId: String, response: AuthenticatorAssertionResponse, type: String = "public-key") {
         self.id = id
         self.rawId = rawId
         self.response = response
         self.type = type
-        self.clientExtensionResults = nil
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(rawId, forKey: .rawId)
-        try container.encode(response, forKey: .response)
-        try container.encode(type, forKey: .type)
     }
 }
 

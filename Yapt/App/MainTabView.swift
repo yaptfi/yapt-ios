@@ -8,24 +8,26 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject var appEnvironment: AppEnvironment
+
     var body: some View {
         TabView {
-            DashboardView()
+            DashboardView(portfolioService: appEnvironment.portfolioService)
                 .tabItem {
                     Label("Dashboard", systemImage: "chart.line.uptrend.xyaxis")
                 }
 
-            WalletsListView()
+            WalletsListView(walletService: appEnvironment.walletService)
                 .tabItem {
                     Label("Wallets", systemImage: "wallet.pass")
                 }
 
-            PositionsListView()
+            PositionsListView(positionService: appEnvironment.positionService)
                 .tabItem {
                     Label("Positions", systemImage: "list.bullet.rectangle")
                 }
 
-            SettingsView()
+            SettingsView(authService: appEnvironment.authService)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

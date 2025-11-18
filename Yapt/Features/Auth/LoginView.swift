@@ -11,12 +11,8 @@ struct LoginView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: LoginViewModel
 
-    init() {
-        // ViewModel will be initialized in onAppear with environment
-        _viewModel = StateObject(wrappedValue: LoginViewModel(authService: AuthService(
-            apiClient: APIClient(),
-            sessionManager: SessionManager()
-        )))
+    init(authService: AuthService) {
+        _viewModel = StateObject(wrappedValue: LoginViewModel(authService: authService))
     }
 
     var body: some View {
@@ -86,15 +82,11 @@ struct LoginView: View {
             Spacer()
         }
         .padding()
-        .onAppear {
-            // Inject the correct environment services
-            let vm = LoginViewModel(authService: appEnvironment.authService)
-            _viewModel.wrappedValue = vm
-        }
     }
 }
 
 #Preview {
-    LoginView()
-        .environmentObject(AppEnvironment())
+    let env = AppEnvironment()
+    return LoginView(authService: env.authService)
+        .environmentObject(env)
 }

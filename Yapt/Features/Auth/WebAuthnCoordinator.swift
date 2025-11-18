@@ -7,6 +7,8 @@
 
 import Foundation
 import AuthenticationServices
+import UIKit
+import Combine
 import OSLog
 
 @MainActor
@@ -129,12 +131,14 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
 
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension WebAuthnCoordinator: ASAuthorizationControllerPresentationContextProviding {
-    nonisolated func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         // Get the first window scene
-        let scene = UIApplication.shared.connectedScenes
-            .first { $0.activationState == .foregroundActive } as? UIWindowScene
-
-        return scene?.windows.first ?? ASPresentationAnchor()
+        guard let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let window = scene.windows.first else {
+            return UIWindow()
+        }
+        return window
     }
 }
 

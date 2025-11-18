@@ -11,9 +11,9 @@ struct PositionsListView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: PositionsViewModel
 
-    init() {
+    init(positionService: PositionService) {
         _viewModel = StateObject(wrappedValue: PositionsViewModel(
-            positionService: PositionService(apiClient: APIClient())
+            positionService: positionService
         ))
     }
 
@@ -33,9 +33,7 @@ struct PositionsListView: View {
             .navigationTitle("Positions")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                let vm = PositionsViewModel(positionService: appEnvironment.positionService)
-                _viewModel.wrappedValue = vm
-                vm.loadPositions()
+                viewModel.loadPositions()
             }
         }
     }
@@ -289,6 +287,7 @@ struct MetricColumn: View {
 }
 
 #Preview {
-    PositionsListView()
-        .environmentObject(AppEnvironment())
+    let env = AppEnvironment()
+    return PositionsListView(positionService: env.positionService)
+        .environmentObject(env)
 }
