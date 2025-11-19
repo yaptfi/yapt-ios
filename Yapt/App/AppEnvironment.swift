@@ -22,6 +22,7 @@ class AppEnvironment: ObservableObject {
     let portfolioService: PortfolioService
     let positionService: PositionService
     let walletService: WalletService
+    let notificationService: NotificationService
 
     init() {
         // Initialize core services
@@ -46,5 +47,6 @@ class AppEnvironment: ObservableObject {
         self.portfolioService = PortfolioService(apiClient: apiClient)
         self.positionService = PositionService(apiClient: apiClient)
         self.walletService = WalletService(apiClient: apiClient, sseClient: sseClient)
+        self.notificationService = NotificationService(apiClient: apiClient)
     }
 }

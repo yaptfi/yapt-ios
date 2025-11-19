@@ -1,0 +1,13 @@
+{
+  "settings": {
+    "depegEnabled": true,
+    "depegSeverity": "high",
+    "depegLowerThreshold": 0.95,
+    "depegUpperThreshold": 1.05,
+    "depegSymbols": ["USDC", "USDT", "DAI"],
+    "apyEnabled": true,
+    "apySeverity": "default",
+    "apyThreshold": 0.05,
+    "ntfyTopic": "yapt_mockuser_550e8400"
+  }
+}

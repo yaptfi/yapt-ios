@@ -93,6 +93,12 @@ class MockAPIClient: APIClient {
         case "/api/wallets":
             return MockConfiguration.walletsFile
 
+        case "/api/notifications/settings":
+            return "notification-settings"
+
+        case "/api/notifications/history":
+            return "notification-history"
+
         default:
             Logger.network.warning("[MOCK] No mock file mapped for path: \(path), using default")
             return "user"

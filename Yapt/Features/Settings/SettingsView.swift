@@ -81,19 +81,17 @@ struct SettingsView: View {
                     Text("App Information")
                 }
 
-                // Notifications Section (Phase 3 - placeholder)
+                // Notifications Section (Phase 3)
                 Section {
-                    NavigationLink(destination: EmptyView()) {
-                        Label("Notifications", systemImage: "bell")
+                    NavigationLink(destination: NotificationSettingsView(notificationService: appEnvironment.notificationService)) {
+                        Label("Notification Settings", systemImage: "bell.badge")
                     }
-                    .disabled(true)
-                    .foregroundColor(.secondary)
+
+                    NavigationLink(destination: NotificationFeedView(notificationService: appEnvironment.notificationService)) {
+                        Label("Notification History", systemImage: "bell.fill")
+                    }
                 } header: {
-                    Text("Preferences")
-                } footer: {
-                    Text("Notification settings will be available in Phase 3")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text("Notifications")
                 }
 
                 // Logout Section

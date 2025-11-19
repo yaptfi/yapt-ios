@@ -1,0 +1,114 @@
+{
+  "notifications": [
+    {
+      "id": "notif-001",
+      "type": "depeg",
+      "severity": "urgent",
+      "title": "USDC Depeg Alert",
+      "message": "USDC has depegged to $0.94 (-6.0% from target)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440001",
+        "walletId": "650e8400-e29b-41d4-a716-446655440001",
+        "symbol": "USDC",
+        "price": 0.94,
+        "deviation": -0.06,
+        "oldApy": null,
+        "newApy": null,
+        "change": null
+      },
+      "createdAt": "2024-11-19T08:30:00.000Z"
+    },
+    {
+      "id": "notif-002",
+      "type": "apy",
+      "severity": "high",
+      "title": "Aave APY Increased",
+      "message": "Aave USDC APY increased from 4.25% to 5.80% (+36.5%)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440001",
+        "walletId": "650e8400-e29b-41d4-a716-446655440001",
+        "symbol": null,
+        "price": null,
+        "deviation": null,
+        "oldApy": 0.0425,
+        "newApy": 0.058,
+        "change": 0.0155
+      },
+      "createdAt": "2024-11-19T07:15:00.000Z"
+    },
+    {
+      "id": "notif-003",
+      "type": "depeg",
+      "severity": "default",
+      "title": "USDT Slight Depeg",
+      "message": "USDT has depegged to $0.98 (-2.0% from target)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440003",
+        "walletId": "650e8400-e29b-41d4-a716-446655440002",
+        "symbol": "USDT",
+        "price": 0.98,
+        "deviation": -0.02,
+        "oldApy": null,
+        "newApy": null,
+        "change": null
+      },
+      "createdAt": "2024-11-18T22:45:00.000Z"
+    },
+    {
+      "id": "notif-004",
+      "type": "apy",
+      "severity": "low",
+      "title": "Compound APY Decreased",
+      "message": "Compound ETH APY decreased from 3.12% to 2.85% (-8.7%)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440002",
+        "walletId": "650e8400-e29b-41d4-a716-446655440001",
+        "symbol": null,
+        "price": null,
+        "deviation": null,
+        "oldApy": 0.0312,
+        "newApy": 0.0285,
+        "change": -0.0027
+      },
+      "createdAt": "2024-11-18T16:20:00.000Z"
+    },
+    {
+      "id": "notif-005",
+      "type": "depeg",
+      "severity": "high",
+      "title": "DAI Depeg Alert",
+      "message": "DAI has depegged to $1.06 (+6.0% from target)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440004",
+        "walletId": "650e8400-e29b-41d4-a716-446655440002",
+        "symbol": "DAI",
+        "price": 1.06,
+        "deviation": 0.06,
+        "oldApy": null,
+        "newApy": null,
+        "change": null
+      },
+      "createdAt": "2024-11-18T14:10:00.000Z"
+    },
+    {
+      "id": "notif-006",
+      "type": "apy",
+      "severity": "default",
+      "title": "Curve APY Increased",
+      "message": "Curve DAI APY increased from 5.67% to 6.12% (+7.9%)",
+      "metadata": {
+        "positionId": "550e8400-e29b-41d4-a716-446655440004",
+        "walletId": "650e8400-e29b-41d4-a716-446655440002",
+        "symbol": null,
+        "price": null,
+        "deviation": null,
+        "oldApy": 0.0567,
+        "newApy": 0.0612,
+        "change": 0.0045
+      },
+      "createdAt": "2024-11-17T20:30:00.000Z"
+    }
+  ],
+  "total": 6,
+  "hasMore": false
+}
