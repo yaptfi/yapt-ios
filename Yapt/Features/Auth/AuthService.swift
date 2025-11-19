@@ -26,6 +26,14 @@ class AuthService: ObservableObject {
     func login(username: String) async throws -> User {
         Logger.auth.info("Starting login for user: \(username)")
 
+        #if MOCK_API
+        // Mock mode: Skip passkey authentication entirely
+        Logger.auth.info("[MOCK] Using mock authentication - bypassing passkey")
+        let user: User = MockDataLoader.load("user")
+        sessionManager.login(user: user)
+        return user
+        #else
+        // Production mode: Full passkey authentication flow
         // Step 1: Generate WebAuthn options
         let options = try await generateLoginOptions(username: username)
 
@@ -39,6 +47,7 @@ class AuthService: ObservableObject {
         sessionManager.login(user: user)
 
         return user
+        #endif
     }
 
     /// Fetch current user (check if session is valid)

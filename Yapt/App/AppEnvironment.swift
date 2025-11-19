@@ -24,7 +24,15 @@ class AppEnvironment: ObservableObject {
 
     init() {
         // Initialize core services
+        #if MOCK_API
+        // Mock mode: Use MockAPIClient instead of real APIClient
+        self.apiClient = MockAPIClient()
+        Logger.network.info("[MOCK] Using MockAPIClient - all API calls will use mock data")
+        #else
+        // Production mode: Use real APIClient
         self.apiClient = APIClient()
+        #endif
+
         self.sseClient = SSEClient()
         self.sessionManager = SessionManager()
         self.errorHandler = ErrorHandler(sessionManager: sessionManager)
@@ -32,7 +40,7 @@ class AppEnvironment: ObservableObject {
         // Set error handler in APIClient for global error handling
         self.apiClient.errorHandler = errorHandler
 
-        // Initialize feature services
+        // Initialize feature services (work with both real and mock APIClient)
         self.authService = AuthService(apiClient: apiClient, sessionManager: sessionManager)
         self.portfolioService = PortfolioService(apiClient: apiClient)
         self.positionService = PositionService(apiClient: apiClient)
