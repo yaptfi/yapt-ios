@@ -14,6 +14,7 @@ class AppEnvironment: ObservableObject {
     let apiClient: APIClient
     let sseClient: SSEClient
     let sessionManager: SessionManager
+    let errorHandler: ErrorHandler
 
     // MARK: - Feature Services
     let authService: AuthService
@@ -26,6 +27,10 @@ class AppEnvironment: ObservableObject {
         self.apiClient = APIClient()
         self.sseClient = SSEClient()
         self.sessionManager = SessionManager()
+        self.errorHandler = ErrorHandler(sessionManager: sessionManager)
+
+        // Set error handler in APIClient for global error handling
+        self.apiClient.errorHandler = errorHandler
 
         // Initialize feature services
         self.authService = AuthService(apiClient: apiClient, sessionManager: sessionManager)

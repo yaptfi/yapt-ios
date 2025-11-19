@@ -13,6 +13,10 @@ class APIClient {
     private let session: URLSession
     private let decoder: JSONDecoder
 
+    /// Global error handler for auth errors (401/403)
+    /// Set by AppEnvironment during initialization
+    weak var errorHandler: ErrorHandler?
+
     init() {
         // Configure URLSession with shared cookie storage for session cookies
         let configuration = URLSessionConfiguration.default
@@ -92,16 +96,24 @@ class APIClient {
                 try self?.handleResponse(data: data, response: response, url: url) ?? data
             }
             .decode(type: T.self, decoder: decoder)
-            .mapError { error -> APIError in
-                if let apiError = error as? APIError {
-                    return apiError
+            .mapError { [weak self] error -> APIError in
+                let apiError: APIError
+                if let err = error as? APIError {
+                    apiError = err
                 } else if error is DecodingError {
                     Logger.network.error("Decoding error: \(error.localizedDescription)")
-                    return .decodingError(error)
+                    apiError = .decodingError(error)
                 } else {
                     Logger.network.error("Network error: \(error.localizedDescription)")
-                    return .networkError(error)
+                    apiError = .networkError(error)
                 }
+
+                // Notify error handler for global handling (auth errors)
+                Task { @MainActor in
+                    _ = self?.errorHandler?.handle(apiError)
+                }
+
+                return apiError
             }
             .eraseToAnyPublisher()
     }
@@ -126,13 +138,21 @@ class APIClient {
                 _ = try self?.handleResponse(data: data, response: response, url: url)
                 return ()
             }
-            .mapError { error -> APIError in
-                if let apiError = error as? APIError {
-                    return apiError
+            .mapError { [weak self] error -> APIError in
+                let apiError: APIError
+                if let err = error as? APIError {
+                    apiError = err
                 } else {
                     Logger.network.error("Network error: \(error.localizedDescription)")
-                    return .networkError(error)
+                    apiError = .networkError(error)
                 }
+
+                // Notify error handler for global handling (auth errors)
+                Task { @MainActor in
+                    _ = self?.errorHandler?.handle(apiError)
+                }
+
+                return apiError
             }
             .eraseToAnyPublisher()
     }
