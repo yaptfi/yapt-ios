@@ -1,15 +1,13 @@
 {
+  "asOf": "2024-11-19T09:00:00.000Z",
   "totalValueUsd": 125430.75,
   "estDailyUsd": 24.86,
   "estMonthlyUsd": 745.80,
   "estYearlyUsd": 8949.60,
-  "lastUpdated": "2024-11-19T09:00:00.000Z",
   "positions": [
     {
-      "id": "pos-1",
-      "protocol": "Aave",
-      "network": "Ethereum",
-      "baseAsset": "USDC",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "displayName": "Aave USDC (Ethereum)",
       "valueUsd": 50000.00,
       "apy": 0.0425,
       "apy7d": 0.0418,
@@ -17,14 +15,13 @@
       "estDailyUsd": 5.82,
       "estMonthlyUsd": 174.66,
       "estYearlyUsd": 2095.89,
-      "measureMethod": "apy",
-      "countingMode": "principal"
+      "measureMethod": "balance",
+      "countingMode": "count",
+      "absoluteYield": null
     },
     {
-      "id": "pos-2",
-      "protocol": "Compound",
-      "network": "Ethereum",
-      "baseAsset": "ETH",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "displayName": "Compound ETH (Ethereum)",
       "valueUsd": 35200.50,
       "apy": 0.0312,
       "apy7d": 0.0305,
@@ -32,16 +29,19 @@
       "estDailyUsd": 3.01,
       "estMonthlyUsd": 90.36,
       "estYearlyUsd": 1084.32,
-      "measureMethod": "apy",
-      "countingMode": "principal"
+      "measureMethod": "balance",
+      "countingMode": "count",
+      "absoluteYield": null
     },
     {
-      "id": "pos-3",
-      "protocol": "Beefy",
-      "network": "Arbitrum",
-      "baseAsset": "USDT",
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "displayName": "Beefy USDT (Arbitrum)",
       "valueUsd": 25430.25,
+      "apy": null,
+      "apy7d": null,
+      "apy30d": null,
       "absoluteYield": {
+        "totalYield7d": 87.15,
         "avgDailyYield": 12.45,
         "projectedMonthlyYield": 373.50,
         "projectedYearlyYield": 4482.00
@@ -50,13 +50,11 @@
       "estMonthlyUsd": 373.50,
       "estYearlyUsd": 4482.00,
       "measureMethod": "rewards",
-      "countingMode": "rewards"
+      "countingMode": "ignore"
     },
     {
-      "id": "pos-4",
-      "protocol": "Curve",
-      "network": "Optimism",
-      "baseAsset": "DAI",
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "displayName": "Curve DAI (Optimism)",
       "valueUsd": 14800.00,
       "apy": 0.0567,
       "apy7d": 0.0552,
@@ -64,8 +62,9 @@
       "estDailyUsd": 2.30,
       "estMonthlyUsd": 69.01,
       "estYearlyUsd": 828.11,
-      "measureMethod": "apy",
-      "countingMode": "principal"
+      "measureMethod": "balance",
+      "countingMode": "count",
+      "absoluteYield": null
     }
   ]
 }

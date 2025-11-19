@@ -13,7 +13,7 @@ enum MockDataLoader {
     /// - Parameter filename: Name of JSON file (without extension)
     /// - Returns: Decoded object of type T
     static func load<T: Decodable>(_ filename: String) -> T {
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "MockData") else {
+        guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
             Logger.network.error("Failed to find mock data file: \(filename).json")
             fatalError("Failed to find \(filename).json in bundle")
         }
@@ -61,7 +61,7 @@ enum MockDataLoader {
     /// - Parameter filename: Name of JSON file (without extension)
     /// - Returns: Decoded object of type T, or nil if loading fails
     static func loadOptional<T: Decodable>(_ filename: String) -> T? {
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "MockData"),
+        guard let url = Bundle.main.url(forResource: filename, withExtension: "json"),
               let data = try? Data(contentsOf: url) else {
             Logger.network.warning("Could not find or load mock data: \(filename).json")
             return nil

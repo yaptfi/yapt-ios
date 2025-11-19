@@ -1,23 +1,22 @@
-[
-  {
-    "id": "wallet-1",
-    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
-    "ensName": "vitalik.eth",
-    "createdAt": "2024-11-10T14:30:00.000Z",
-    "lastScannedAt": "2024-11-19T08:00:00.000Z"
-  },
-  {
-    "id": "wallet-2",
-    "address": "0x1234567890123456789012345678901234567890",
-    "ensName": "mockuser.eth",
-    "createdAt": "2024-11-15T16:45:00.000Z",
-    "lastScannedAt": "2024-11-19T07:30:00.000Z"
-  },
-  {
-    "id": "wallet-3",
-    "address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-    "ensName": null,
-    "createdAt": "2024-11-18T10:00:00.000Z",
-    "lastScannedAt": "2024-11-19T09:00:00.000Z"
-  }
-]
+{
+  "wallets": [
+    {
+      "id": "650e8400-e29b-41d4-a716-446655440001",
+      "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+      "ensName": "vitalik.eth",
+      "createdAt": "2024-11-10T14:30:00.000Z"
+    },
+    {
+      "id": "650e8400-e29b-41d4-a716-446655440002",
+      "address": "0x1234567890123456789012345678901234567890",
+      "ensName": "mockuser.eth",
+      "createdAt": "2024-11-15T16:45:00.000Z"
+    },
+    {
+      "id": "650e8400-e29b-41d4-a716-446655440003",
+      "address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      "ensName": null,
+      "createdAt": "2024-11-18T10:00:00.000Z"
+    }
+  ]
+}

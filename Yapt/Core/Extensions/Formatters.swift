@@ -9,12 +9,16 @@ import Foundation
 
 enum Formatters {
     // MARK: - Currency
+    /// Standard currency formatter: $X (no decimals, $ prefix, no locale suffix)
     static let currency: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
+        formatter.currencySymbol = "$"
+        formatter.internationalCurrencySymbol = "$"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.maximumFractionDigits = 0  // Integer rounding
+        formatter.minimumFractionDigits = 0
         return formatter
     }()
 
@@ -22,6 +26,8 @@ enum Formatters {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
+        formatter.currencySymbol = "$"
+        formatter.locale = Locale(identifier: "en_US")
         formatter.maximumFractionDigits = 0
         formatter.minimumFractionDigits = 0
         return formatter

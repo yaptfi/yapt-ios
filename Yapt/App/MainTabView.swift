@@ -12,10 +12,13 @@ struct MainTabView: View {
 
     var body: some View {
         TabView {
-            DashboardView(portfolioService: appEnvironment.portfolioService)
-                .tabItem {
-                    Label("Dashboard", systemImage: "chart.line.uptrend.xyaxis")
-                }
+            DashboardView(
+                portfolioService: appEnvironment.portfolioService,
+                positionService: appEnvironment.positionService
+            )
+            .tabItem {
+                Label("Dashboard", systemImage: "chart.line.uptrend.xyaxis")
+            }
 
             WalletsListView(walletService: appEnvironment.walletService)
                 .tabItem {

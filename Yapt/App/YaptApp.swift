@@ -16,6 +16,10 @@ struct YaptApp: App {
             RootView()
                 .environmentObject(appEnvironment.sessionManager)
                 .environmentObject(appEnvironment)
+                .onAppear {
+                    // Restore session on app startup
+                    appEnvironment.sessionManager.restoreSession()
+                }
         }
     }
 }

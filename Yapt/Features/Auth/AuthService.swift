@@ -29,9 +29,9 @@ class AuthService: ObservableObject {
         #if MOCK_API
         // Mock mode: Skip passkey authentication entirely
         Logger.auth.info("[MOCK] Using mock authentication - bypassing passkey")
-        let user: User = MockDataLoader.load("user")
-        sessionManager.login(user: user)
-        return user
+        let response: AuthMeResponse = MockDataLoader.load("user")
+        sessionManager.login(user: response.user)
+        return response.user
         #else
         // Production mode: Full passkey authentication flow
         // Step 1: Generate WebAuthn options

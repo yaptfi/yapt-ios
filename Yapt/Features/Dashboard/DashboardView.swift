@@ -11,9 +11,10 @@ struct DashboardView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: DashboardViewModel
 
-    init(portfolioService: PortfolioService) {
+    init(portfolioService: PortfolioService, positionService: PositionService) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
-            portfolioService: portfolioService
+            portfolioService: portfolioService,
+            positionService: positionService
         ))
     }
 
@@ -50,34 +51,65 @@ struct DashboardView: View {
                     backgroundColor: .blue
                 )
 
-                // Income Projections
-                HStack(spacing: 12) {
-                    SmallMetricCard(
-                        title: "Daily",
-                        value: summary.estDailyUsd.asCurrency()
-                    )
-                    SmallMetricCard(
-                        title: "Monthly",
-                        value: summary.estMonthlyUsd.asCurrency()
-                    )
-                    SmallMetricCard(
-                        title: "Yearly",
-                        value: summary.estYearlyUsd.asCurrency()
-                    )
-                }
-
-                // Recent Positions
-                if !summary.positions.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Top Positions")
+                // Actual Yields Section (Historical Data)
+                if let actualYields = viewModel.actualYields {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Actual Yield")
                             .font(.headline)
-                            .padding(.horizontal)
+                            .foregroundColor(.primary)
 
-                        ForEach(Array(summary.positions.prefix(5))) { position in
-                            PositionRow(position: position)
+                        Text("Historical performance")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 12) {
+                            ActualYieldCard(
+                                title: "24h",
+                                value: actualYields.actual24hYield.asCurrency()
+                            )
+                            ActualYieldCard(
+                                title: "7d",
+                                value: actualYields.actual7dYield.asCurrency()
+                            )
+                            ActualYieldCard(
+                                title: "30d",
+                                value: actualYields.actual30dYield.asCurrency()
+                            )
                         }
                     }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(12)
                 }
+
+                // Projected Income Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Projected Income")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+
+                    Text("Estimated based on current APY")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 12) {
+                        ProjectedIncomeCard(
+                            title: "Daily",
+                            value: summary.estDailyUsd.asCurrency()
+                        )
+                        ProjectedIncomeCard(
+                            title: "Monthly",
+                            value: summary.estMonthlyUsd.asCurrency()
+                        )
+                        ProjectedIncomeCard(
+                            title: "Yearly",
+                            value: summary.estYearlyUsd.asCurrency()
+                        )
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -163,24 +195,55 @@ struct MetricCard: View {
     }
 }
 
-struct SmallMetricCard: View {
+struct ActualYieldCard: View {
     let title: String
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 6) {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             Text(value)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.systemGray6))
+        .frame(maxWidth: .infinity)
+        .frame(height: 60)
+        .padding(.horizontal, 8)
+        .background(Color(.systemBackground))
         .cornerRadius(8)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+}
+
+struct ProjectedIncomeCard: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Text(value)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 60)
+        .padding(.horizontal, 8)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
@@ -228,6 +291,9 @@ struct PositionRow<P: PositionDisplayable>: View {
 
 #Preview {
     let env = AppEnvironment()
-    return DashboardView(portfolioService: env.portfolioService)
-        .environmentObject(env)
+    return DashboardView(
+        portfolioService: env.portfolioService,
+        positionService: env.positionService
+    )
+    .environmentObject(env)
 }

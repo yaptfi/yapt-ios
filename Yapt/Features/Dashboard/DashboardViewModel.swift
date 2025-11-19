@@ -12,15 +12,18 @@ import OSLog
 @MainActor
 class DashboardViewModel: ObservableObject {
     @Published var summary: PortfolioSummary?
+    @Published var actualYields: PositionSummary?
     @Published var isLoading: Bool = false
     @Published var isRefreshing: Bool = false
     @Published var errorMessage: String?
 
     private let portfolioService: PortfolioService
+    private let positionService: PositionService
     private var cancellables = Set<AnyCancellable>()
 
-    init(portfolioService: PortfolioService) {
+    init(portfolioService: PortfolioService, positionService: PositionService) {
         self.portfolioService = portfolioService
+        self.positionService = positionService
     }
 
     func loadSummary() {
@@ -29,22 +32,27 @@ class DashboardViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        portfolioService.fetchSummary()
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case .failure(let error) = completion {
-                        Logger.ui.error("Failed to load portfolio: \(error.localizedDescription)")
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] summary in
-                    self?.summary = summary
-                    Logger.ui.debug("Loaded portfolio: \(summary.positions.count) positions")
+        // Fetch both portfolio summary and actual yields
+        Publishers.CombineLatest(
+            portfolioService.fetchSummary(),
+            positionService.fetchPositions()
+        )
+        .receive(on: DispatchQueue.main)
+        .sink(
+            receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case .failure(let error) = completion {
+                    Logger.ui.error("Failed to load portfolio: \(error.localizedDescription)")
+                    self?.errorMessage = error.localizedDescription
                 }
-            )
-            .store(in: &cancellables)
+            },
+            receiveValue: { [weak self] summary, positionsResponse in
+                self?.summary = summary
+                self?.actualYields = positionsResponse.summary
+                Logger.ui.debug("Loaded portfolio: \(summary.positions.count) positions")
+            }
+        )
+        .store(in: &cancellables)
     }
 
     func refresh() {
@@ -53,22 +61,27 @@ class DashboardViewModel: ObservableObject {
         isRefreshing = true
         errorMessage = nil
 
-        portfolioService.fetchSummary(forceRefresh: true)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isRefreshing = false
-                    if case .failure(let error) = completion {
-                        Logger.ui.error("Failed to refresh portfolio: \(error.localizedDescription)")
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] summary in
-                    self?.summary = summary
-                    Logger.ui.debug("Refreshed portfolio")
+        // Fetch both portfolio summary and actual yields
+        Publishers.CombineLatest(
+            portfolioService.fetchSummary(forceRefresh: true),
+            positionService.fetchPositions(forceRefresh: true)
+        )
+        .receive(on: DispatchQueue.main)
+        .sink(
+            receiveCompletion: { [weak self] completion in
+                self?.isRefreshing = false
+                if case .failure(let error) = completion {
+                    Logger.ui.error("Failed to refresh portfolio: \(error.localizedDescription)")
+                    self?.errorMessage = error.localizedDescription
                 }
-            )
-            .store(in: &cancellables)
+            },
+            receiveValue: { [weak self] summary, positionsResponse in
+                self?.summary = summary
+                self?.actualYields = positionsResponse.summary
+                Logger.ui.debug("Refreshed portfolio")
+            }
+        )
+        .store(in: &cancellables)
     }
 
     func clearError() {
