@@ -78,6 +78,12 @@ extension Double {
         Formatters.currency.string(from: NSNumber(value: self)) ?? "$\(self)"
     }
 
+    func asCurrencyWithSign() -> String {
+        let absoluteValue = abs(self)
+        let formatted = Formatters.currency.string(from: NSNumber(value: absoluteValue)) ?? "$\(absoluteValue)"
+        return self >= 0 ? "+\(formatted)" : "-\(formatted)"
+    }
+
     func asCurrencyCompact() -> String {
         if self >= 1_000_000 {
             return "$\(String(format: "%.1fM", self / 1_000_000))"

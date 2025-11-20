@@ -14,7 +14,8 @@ struct MainTabView: View {
         TabView {
             DashboardView(
                 portfolioService: appEnvironment.portfolioService,
-                positionService: appEnvironment.positionService
+                positionService: appEnvironment.positionService,
+                portfolioValueCache: appEnvironment.portfolioValueCache
             )
             .tabItem {
                 Label("Dashboard", systemImage: "chart.line.uptrend.xyaxis")

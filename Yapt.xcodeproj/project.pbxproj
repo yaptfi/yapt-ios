@@ -23,11 +23,18 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXBuildFile section */
+		D1B42BB5ED8C4661993F880A11069023 /* AnimatedCurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E829AACE8DED4B2D90DF4C433D5D25F1 /* AnimatedCurrencyText.swift */; };
+		F3DCEA6B33BA458490CB1A9E124BB0ED /* PortfolioValueCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693C0F244F9D4CCB919ECFAD54C92B99 /* PortfolioValueCache.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		F79218F72ECC9021000DA6D7 /* Yapt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F79219042ECC9022000DA6D7 /* YaptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F792190E2ECC9022000DA6D7 /* YaptUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7A274032ECC91BD007D3DFA /* Yapt.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Yapt.xcodeproj; sourceTree = "<group>"; };
+		E829AACE8DED4B2D90DF4C433D5D25F1 /* AnimatedCurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Components/AnimatedCurrencyText.swift; sourceTree = "<group>"; };
+		693C0F244F9D4CCB919ECFAD54C92B99 /* PortfolioValueCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Storage/PortfolioValueCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -250,6 +257,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1B42BB5ED8C4661993F880A11069023 /* AnimatedCurrencyText.swift in Sources */,
+				F3DCEA6B33BA458490CB1A9E124BB0ED /* PortfolioValueCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
