@@ -41,17 +41,6 @@ struct PositionsListView: View {
     @ViewBuilder
     private var contentView: some View {
         List {
-            // Summary Section
-            if let summary = viewModel.summary {
-                Section {
-                    SummaryRow(label: "24h Yield", value: summary.actual24hYield.asCurrency())
-                    SummaryRow(label: "7d Yield", value: summary.actual7dYield.asCurrency())
-                    SummaryRow(label: "30d Yield", value: summary.actual30dYield.asCurrency())
-                } header: {
-                    Text("Actual Yields")
-                }
-            }
-
             // Positions Section
             Section {
                 ForEach(viewModel.positions) { position in

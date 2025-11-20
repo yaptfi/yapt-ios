@@ -65,6 +65,7 @@ struct DashboardView: View {
     private func contentView(_ summary: PortfolioSummary) -> some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Total Value Card
                 PortfolioTotalValueCard(
                     subtitle: "Last updated \(summary.lastUpdated)",
                     displayedValue: hasAnimatedTotalValue ? animatedTotalValue : nil,
@@ -72,42 +73,16 @@ struct DashboardView: View {
                     floatingDelta: activeFloatingDelta
                 )
 
-                // Actual Yields Section (Historical Data)
-                if let actualYields = viewModel.actualYields {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Actual Yield")
-                            .font(.headline)
+                // Projected Income Section (Highlighted - "Can I live off this?")
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .foregroundColor(.orange)
+                        Text("Projected Income")
+                            .font(.title3)
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
-
-                        Text("Historical performance")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        HStack(spacing: 12) {
-                            ActualYieldCard(
-                                title: "24h",
-                                value: actualYields.actual24hYield.asCurrency()
-                            )
-                            ActualYieldCard(
-                                title: "7d",
-                                value: actualYields.actual7dYield.asCurrency()
-                            )
-                            ActualYieldCard(
-                                title: "30d",
-                                value: actualYields.actual30dYield.asCurrency()
-                            )
-                        }
                     }
-                    .padding()
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(12)
-                }
-
-                // Projected Income Section
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Projected Income")
-                        .font(.headline)
-                        .foregroundColor(.primary)
 
                     Text("Estimated based on current APY")
                         .font(.caption)
@@ -129,8 +104,52 @@ struct DashboardView: View {
                     }
                 }
                 .padding()
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(12)
+                .background(
+                    LinearGradient(
+                        colors: [Color.orange.opacity(0.15), Color.yellow.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(16)
+                .shadow(color: Color.orange.opacity(0.1), radius: 8, x: 0, y: 4)
+
+                // Actual Yields Section ("How much did I make lately?")
+                if let actualYields = viewModel.actualYields {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "dollarsign.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Actual Earnings")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                        }
+
+                        Text("What you've actually earned")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 12) {
+                            ActualYieldCard(
+                                title: "24h",
+                                value: actualYields.actual24hYield.asCurrency()
+                            )
+                            ActualYieldCard(
+                                title: "7d",
+                                value: actualYields.actual7dYield.asCurrency()
+                            )
+                            ActualYieldCard(
+                                title: "30d",
+                                value: actualYields.actual30dYield.asCurrency()
+                            )
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                }
 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
