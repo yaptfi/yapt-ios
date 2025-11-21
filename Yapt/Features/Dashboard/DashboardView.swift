@@ -14,6 +14,7 @@ struct DashboardView: View {
     @State private var hasAnimatedTotalValue = false
     @State private var activeFloatingDelta: FloatingDelta?
     @State private var floatingDeltaRemovalTask: DispatchWorkItem?
+    @Environment(\.scenePhase) private var scenePhase
 
     init(portfolioService: PortfolioService, positionService: PositionService, portfolioValueCache: PortfolioValueCache) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
@@ -41,6 +42,7 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
+                // Always load on appear - service will use cache if valid
                 viewModel.loadSummary()
                 initializeAnimatedValueIfNeeded()
             }
@@ -53,6 +55,12 @@ struct DashboardView: View {
             .onChange(of: viewModel.valueAnimationTrigger?.id) { _, _ in
                 guard let trigger = viewModel.valueAnimationTrigger else { return }
                 startValueAnimation(using: trigger)
+            }
+            .onChange(of: scenePhase) { oldPhase, newPhase in
+                // Refresh when app becomes active (returns from background)
+                if oldPhase == .background && newPhase == .active {
+                    viewModel.loadSummary()
+                }
             }
         }
         .onDisappear {

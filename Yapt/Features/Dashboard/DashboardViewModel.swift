@@ -56,6 +56,7 @@ class DashboardViewModel: ObservableObject {
     func loadSummary() {
         guard !isLoading else { return }
 
+        // Always fetch - the service layer will use cache if still valid
         performLoad(forceRefresh: false)
     }
 
