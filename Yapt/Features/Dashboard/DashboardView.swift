@@ -14,7 +14,6 @@ struct DashboardView: View {
     @State private var hasAnimatedTotalValue = false
     @State private var activeFloatingDelta: FloatingDelta?
     @State private var floatingDeltaRemovalTask: DispatchWorkItem?
-    @Environment(\.scenePhase) private var scenePhase
 
     init(portfolioService: PortfolioService, positionService: PositionService, portfolioValueCache: PortfolioValueCache) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
@@ -56,12 +55,10 @@ struct DashboardView: View {
                 guard let trigger = viewModel.valueAnimationTrigger else { return }
                 startValueAnimation(using: trigger)
             }
-            .onChange(of: scenePhase) { oldPhase, newPhase in
-                // Force refresh when app becomes active (returns from background)
-                // Always fetch fresh data, don't use cache
-                if oldPhase == .background && newPhase == .active {
-                    viewModel.refresh()
-                }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                // Force refresh when app returns from background
+                // Always fetch fresh data, bypassing cache
+                viewModel.refresh()
             }
         }
         .onDisappear {
