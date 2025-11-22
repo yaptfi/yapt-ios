@@ -57,9 +57,10 @@ struct DashboardView: View {
                 startValueAnimation(using: trigger)
             }
             .onChange(of: scenePhase) { oldPhase, newPhase in
-                // Refresh when app becomes active (returns from background)
+                // Force refresh when app becomes active (returns from background)
+                // Always fetch fresh data, don't use cache
                 if oldPhase == .background && newPhase == .active {
-                    viewModel.loadSummary()
+                    viewModel.refresh()
                 }
             }
         }
