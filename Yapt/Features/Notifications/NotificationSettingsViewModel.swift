@@ -28,7 +28,7 @@ class NotificationSettingsViewModel: ObservableObject {
 
     @Published var apyEnabled: Bool = false
     @Published var apySeverity: NotificationSeverity = .default
-    @Published var apyThreshold: String = "0.05"
+    @Published var apyThresholdPercent: String = "5"  // Display as percentage (e.g., "5" for 5%)
 
     // MARK: - Dependencies
 
@@ -120,16 +120,36 @@ class NotificationSettingsViewModel: ObservableObject {
 
         apyEnabled = settings.apyEnabled
         apySeverity = settings.apySeverity
-        apyThreshold = String(format: "%.2f", settings.apyThreshold)
+        // Convert from decimal (0.05) to percentage display (5)
+        let percentValue = settings.apyThreshold * 100
+        if percentValue.truncatingRemainder(dividingBy: 1) == 0 {
+            apyThresholdPercent = String(format: "%.0f", percentValue)
+        } else {
+            apyThresholdPercent = String(format: "%.1f", percentValue)
+        }
+    }
+
+    /// Parse a localized decimal string (handles both comma and period as decimal separator)
+    private func parseLocalizedDouble(_ string: String) -> Double? {
+        // Try parsing with period first
+        if let value = Double(string) {
+            return value
+        }
+        // Try replacing comma with period (for localized keyboards)
+        let normalized = string.replacingOccurrences(of: ",", with: ".")
+        return Double(normalized)
     }
 
     private func buildSettings() -> NotificationSettings? {
-        // Parse and validate thresholds
-        guard let depegLower = Double(depegLowerThreshold),
-              let depegUpper = Double(depegUpperThreshold),
-              let apyThresh = Double(apyThreshold) else {
+        // Parse and validate thresholds (using localized decimal parsing)
+        guard let depegLower = parseLocalizedDouble(depegLowerThreshold),
+              let depegUpper = parseLocalizedDouble(depegUpperThreshold),
+              let apyPercent = parseLocalizedDouble(apyThresholdPercent) else {
             return nil
         }
+
+        // Convert percentage to decimal (e.g., 5 -> 0.05)
+        let apyThresh = apyPercent / 100
 
         // Validate ranges
         guard depegLower > 0, depegLower < 1,
@@ -152,8 +172,7 @@ class NotificationSettingsViewModel: ObservableObject {
             depegSymbols: symbolsArray.isEmpty ? nil : symbolsArray,
             apyEnabled: apyEnabled,
             apySeverity: apySeverity,
-            apyThreshold: apyThresh,
-            ntfyTopic: settings?.ntfyTopic
+            apyThreshold: apyThresh
         )
     }
 }

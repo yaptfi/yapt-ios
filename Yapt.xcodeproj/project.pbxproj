@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D1B42BB5ED8C4661993F880A11069023 /* Yapt/Core/Components/AnimatedCurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E829AACE8DED4B2D90DF4C433D5D25F1 /* Yapt/Core/Components/AnimatedCurrencyText.swift */; };
+		F3DCEA6B33BA458490CB1A9E124BB0ED /* Yapt/Core/Storage/PortfolioValueCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693C0F244F9D4CCB919ECFAD54C92B99 /* Yapt/Core/Storage/PortfolioValueCache.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		F79219052ECC9022000DA6D7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,18 +28,13 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXBuildFile section */
-		D1B42BB5ED8C4661993F880A11069023 /* AnimatedCurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E829AACE8DED4B2D90DF4C433D5D25F1 /* AnimatedCurrencyText.swift */; };
-		F3DCEA6B33BA458490CB1A9E124BB0ED /* PortfolioValueCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693C0F244F9D4CCB919ECFAD54C92B99 /* PortfolioValueCache.swift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
+		693C0F244F9D4CCB919ECFAD54C92B99 /* Yapt/Core/Storage/PortfolioValueCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Storage/PortfolioValueCache.swift; sourceTree = "<group>"; };
+		E829AACE8DED4B2D90DF4C433D5D25F1 /* Yapt/Core/Components/AnimatedCurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Components/AnimatedCurrencyText.swift; sourceTree = "<group>"; };
 		F79218F72ECC9021000DA6D7 /* Yapt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F79219042ECC9022000DA6D7 /* YaptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F792190E2ECC9022000DA6D7 /* YaptUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7A274032ECC91BD007D3DFA /* Yapt.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Yapt.xcodeproj; sourceTree = "<group>"; };
-		E829AACE8DED4B2D90DF4C433D5D25F1 /* AnimatedCurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Components/AnimatedCurrencyText.swift; sourceTree = "<group>"; };
-		693C0F244F9D4CCB919ECFAD54C92B99 /* PortfolioValueCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yapt/Core/Storage/PortfolioValueCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -80,6 +80,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F73BDD902EFD352E000C4B1C /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				E829AACE8DED4B2D90DF4C433D5D25F1 /* Yapt/Core/Components/AnimatedCurrencyText.swift */,
+				693C0F244F9D4CCB919ECFAD54C92B99 /* Yapt/Core/Storage/PortfolioValueCache.swift */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		F79218EE2ECC9021000DA6D7 = {
 			isa = PBXGroup;
 			children = (
@@ -87,6 +96,7 @@
 				F79219072ECC9022000DA6D7 /* YaptTests */,
 				F79219112ECC9022000DA6D7 /* YaptUITests */,
 				F79218F82ECC9021000DA6D7 /* Products */,
+				F73BDD902EFD352E000C4B1C /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -257,8 +267,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D1B42BB5ED8C4661993F880A11069023 /* AnimatedCurrencyText.swift in Sources */,
-				F3DCEA6B33BA458490CB1A9E124BB0ED /* PortfolioValueCache.swift in Sources */,
+				D1B42BB5ED8C4661993F880A11069023 /* Yapt/Core/Components/AnimatedCurrencyText.swift in Sources */,
+				F3DCEA6B33BA458490CB1A9E124BB0ED /* Yapt/Core/Storage/PortfolioValueCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

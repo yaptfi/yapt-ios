@@ -2,10 +2,12 @@
 
 ## Project Overview
 
-Yapt is a DeFi portfolio tracking iOS app built with SwiftUI. This is **Phase 1** implementation focusing on:
+Yapt is a DeFi portfolio tracking iOS app built with SwiftUI. **Phases 1-3** are implemented:
 - Passkey authentication (WebAuthn)
-- Portfolio dashboard
-- Positions and wallets listing
+- Portfolio dashboard with positions and wallets
+- Add wallet with SSE discovery progress (Phase 2)
+- Wallet management: detail view, rescan, delete (Phase 2)
+- Notification settings and history feed (Phase 3 - awaiting backend)
 - Session management with cookie-based authentication
 
 **Backend API**: https://yapt.fi/api
@@ -23,11 +25,13 @@ Yapt is a DeFi portfolio tracking iOS app built with SwiftUI. This is **Phase 1*
 All dependencies flow through `AppEnvironment`:
 ```swift
 let env = AppEnvironment.shared
-env.sessionManager  // Auth state
-env.authService     // Login/logout
-env.portfolioService // Portfolio data
-env.positionService  // Positions
-env.walletService    // Wallets
+env.sessionManager       // Auth state
+env.authService          // Login/logout
+env.portfolioService     // Portfolio data
+env.positionService      // Positions
+env.walletService        // Wallets + SSE discovery
+env.notificationService  // Notification settings & history
+env.sseClient            // Server-sent events for discovery
 ```
 
 ### 3. Authentication Flow
@@ -64,7 +68,8 @@ Yapt/
 │   ├── Networking/
 │   │   ├── APIClient.swift    # URLSession wrapper
 │   │   ├── APIEndpoint.swift  # Type-safe endpoints
-│   │   └── APIError.swift     # Error types
+│   │   ├── APIError.swift     # Error types
+│   │   └── SSEClient.swift    # Server-sent events client
 │   ├── Models/                # Codable types
 │   ├── Extensions/
 │   │   ├── Constants.swift    # API URLs, RP_ID
@@ -87,9 +92,21 @@ Yapt/
 │   │   ├── PositionsViewModel.swift
 │   │   └── PositionsListView.swift
 │   ├── Wallets/
-│   │   ├── WalletService.swift
+│   │   ├── WalletService.swift        # Wallet API + SSE discovery
 │   │   ├── WalletsViewModel.swift
-│   │   └── WalletsListView.swift
+│   │   ├── WalletsListView.swift
+│   │   ├── AddWalletView.swift        # Add wallet flow (Phase 2)
+│   │   ├── AddWalletViewModel.swift
+│   │   ├── DiscoveryProgressView.swift # SSE progress UI
+│   │   ├── WalletDetailView.swift     # Wallet detail + rescan
+│   │   └── WalletDetailViewModel.swift
+│   ├── Notifications/                  # Phase 3
+│   │   ├── NotificationService.swift   # Settings & history API
+│   │   ├── NotificationSettingsView.swift
+│   │   ├── NotificationSettingsViewModel.swift
+│   │   ├── NotificationFeedView.swift  # History feed
+│   │   ├── NotificationFeedViewModel.swift
+│   │   └── NotificationDetailView.swift
 │   └── Settings/
 │       ├── SettingsViewModel.swift
 │       └── SettingsView.swift
@@ -252,9 +269,9 @@ if response.statusCode == 401 {
 }
 ```
 
-## Phase 1 Scope (Current)
+## Implementation Status
 
-**Implemented**:
+### Phase 1 (Auth + Dashboard) — ✅ Complete
 - ✅ Passkey authentication
 - ✅ Session persistence
 - ✅ Portfolio dashboard
@@ -265,12 +282,22 @@ if response.statusCode == 401 {
 - ✅ Error handling
 - ✅ Caching
 
-**Out of Scope** (Phase 2/3):
-- ❌ Add wallet flow
-- ❌ Discovery progress (SSE)
-- ❌ Remove wallet
-- ❌ Notifications settings
-- ❌ Push notifications
+### Phase 2 (Add Wallet & Discovery) — ✅ Complete
+- ✅ Add wallet flow (address/ENS input)
+- ✅ SSE discovery progress (real-time protocol scanning)
+- ✅ Wallet detail view with positions
+- ✅ Rescan wallet (SSE)
+- ✅ Remove wallet (swipe-to-delete)
+
+### Phase 3 (Notifications) — ✅ iOS Complete, ⏳ Backend Pending
+- ✅ Notification settings UI (depeg/APY alerts, thresholds, severity)
+- ✅ Notification history feed with pagination
+- ✅ Notification detail view
+- ⏳ Awaiting backend: `GET/PUT /api/notifications/settings`, `GET /api/notifications/history`
+- See `yapt-backend-notifications.md` for backend API spec
+
+### Out of Scope (Phase 3b+)
+- ❌ APNs push notifications (planned)
 - ❌ User registration
 
 ## Testing Checklist
@@ -342,7 +369,7 @@ Before committing changes:
 2. Do I need to update the backend contract?
 3. Should this be cached? What's the TTL?
 4. Does this need to work offline?
-5. Is this in scope for Phase 1?
+5. Does the backend endpoint exist? (See `yapt-backend-notifications.md` for pending endpoints)
 
 ## When in Doubt
 

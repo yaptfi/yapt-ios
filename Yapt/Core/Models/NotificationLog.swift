@@ -21,6 +21,29 @@ struct NotificationLog: Codable, Identifiable, Equatable {
     var formattedTimestamp: String {
         createdAt.asRelativeString()
     }
+
+    // Handle backend returning id as Int or String
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode id flexibly (Int or String)
+        if let intId = try? container.decode(Int.self, forKey: .id) {
+            self.id = String(intId)
+        } else {
+            self.id = try container.decode(String.self, forKey: .id)
+        }
+
+        self.type = try container.decode(NotificationType.self, forKey: .type)
+        self.severity = try container.decode(NotificationSeverity.self, forKey: .severity)
+        self.title = try container.decode(String.self, forKey: .title)
+        self.message = try container.decode(String.self, forKey: .message)
+        self.metadata = try container.decodeIfPresent(NotificationMetadata.self, forKey: .metadata)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, type, severity, title, message, metadata, createdAt
+    }
 }
 
 // MARK: - Notification Type

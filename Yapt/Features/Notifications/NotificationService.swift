@@ -94,6 +94,50 @@ class NotificationService {
             })
             .eraseToAnyPublisher()
     }
+
+    // MARK: - Device Registration (APNs)
+
+    /// Register device for push notifications
+    func registerDevice(token: Data) -> AnyPublisher<DeviceRegistrationResponse, APIError> {
+        let tokenString = token.map { String(format: "%02.2hhx", $0) }.joined()
+        let environment = DeviceRegistration.detectEnvironment()
+
+        do {
+            let registration = DeviceRegistration(
+                token: tokenString,
+                environment: environment
+            )
+            let endpoint = try APIEndpoint(
+                path: "/api/notifications/devices",
+                method: .post,
+                bodyObject: registration
+            )
+
+            Logger.network.info("Registering device with environment: \(environment)")
+
+            return apiClient.request(endpoint)
+                .handleEvents(receiveOutput: { response in
+                    Logger.network.info("Registered device for push notifications: \(response.deviceId)")
+                })
+                .eraseToAnyPublisher()
+        } catch {
+            return Fail(error: .networkError(error)).eraseToAnyPublisher()
+        }
+    }
+
+    /// Unregister device from push notifications
+    func unregisterDevice(deviceId: String) -> AnyPublisher<Void, APIError> {
+        let endpoint = APIEndpoint(
+            path: "/api/notifications/devices/\(deviceId)",
+            method: .delete
+        )
+
+        return apiClient.request(endpoint)
+            .handleEvents(receiveOutput: {
+                Logger.network.info("Unregistered device from push notifications")
+            })
+            .eraseToAnyPublisher()
+    }
 }
 
 // MARK: - Cached Value

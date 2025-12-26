@@ -10,11 +10,18 @@ import SwiftUI
 struct NotificationSettingsView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: NotificationSettingsViewModel
+    @ObservedObject private var pushService: PushNotificationService
+    @FocusState private var focusedField: FocusedField?
 
-    init(notificationService: NotificationService) {
+    private enum FocusedField {
+        case depegLower, depegUpper, depegSymbols, apyThreshold
+    }
+
+    init(notificationService: NotificationService, pushService: PushNotificationService) {
         _viewModel = StateObject(wrappedValue: NotificationSettingsViewModel(
             notificationService: notificationService
         ))
+        self.pushService = pushService
     }
 
     var body: some View {
@@ -32,6 +39,7 @@ struct NotificationSettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 viewModel.loadSettings()
+                pushService.refreshAuthorizationStatus()
             }
         }
     }
@@ -39,6 +47,9 @@ struct NotificationSettingsView: View {
     @ViewBuilder
     private var settingsForm: some View {
         Form {
+            // Push Notifications Section
+            pushNotificationsSection
+
             // Depeg Alerts Section
             Section {
                 Toggle("Enable Depeg Alerts", isOn: $viewModel.depegEnabled)
@@ -60,7 +71,11 @@ struct NotificationSettingsView: View {
                         TextField("0.95", text: $viewModel.depegLowerThreshold)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
+                            .focused($focusedField, equals: .depegLower)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        focusedField = .depegLower
                     }
 
                     HStack {
@@ -69,7 +84,11 @@ struct NotificationSettingsView: View {
                         TextField("1.05", text: $viewModel.depegUpperThreshold)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
+                            .focused($focusedField, equals: .depegUpper)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        focusedField = .depegUpper
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -77,6 +96,7 @@ struct NotificationSettingsView: View {
                             .font(.subheadline)
                         TextField("USDC, USDT, DAI", text: $viewModel.depegSymbols)
                             .textInputAutocapitalization(.characters)
+                            .focused($focusedField, equals: .depegSymbols)
                         Text("Comma-separated. Leave empty for all stablecoins.")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -93,7 +113,7 @@ struct NotificationSettingsView: View {
 
             // APY Alerts Section
             Section {
-                Toggle("Enable APY Alerts", isOn: $viewModel.apyEnabled)
+                Toggle("Enable Low APY Alerts", isOn: $viewModel.apyEnabled)
 
                 if viewModel.apyEnabled {
                     Picker("Severity", selection: $viewModel.apySeverity) {
@@ -107,41 +127,32 @@ struct NotificationSettingsView: View {
                     }
 
                     HStack {
-                        Text("Change Threshold")
+                        Text("Minimum APY")
                         Spacer()
-                        TextField("0.05", text: $viewModel.apyThreshold)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
+                        HStack(spacing: 4) {
+                            TextField("5", text: $viewModel.apyThresholdPercent)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .focused($focusedField, equals: .apyThreshold)
+                            Text("%")
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    Text("Minimum APY change to trigger alert (e.g., 0.05 = 5%)")
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        focusedField = .apyThreshold
+                    }
+                    Text("Alert when APY drops below this value")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             } header: {
                 HStack {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("APY Change Alerts")
+                    Image(systemName: "chart.line.downtrend.xyaxis")
+                    Text("Low APY Alerts")
                 }
             } footer: {
-                Text("Get notified when position APY changes significantly")
-            }
-
-            // ntfy Topic Section
-            if let ntfyTopic = viewModel.settings?.ntfyTopic {
-                Section {
-                    HStack {
-                        Text("Your Topic")
-                        Spacer()
-                        Text(ntfyTopic)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundColor(.secondary)
-                    }
-                } header: {
-                    Text("ntfy Configuration")
-                } footer: {
-                    Text("This is your unique notification topic. You can subscribe to it directly using the ntfy app.")
-                }
+                Text("Get notified when position APY drops below your threshold")
             }
 
             // Save Button
@@ -188,6 +199,100 @@ struct NotificationSettingsView: View {
                 }
             }
         }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focusedField = nil
+                }
+            }
+        }
+    }
+
+    // MARK: - Push Notifications Section
+
+    @ViewBuilder
+    private var pushNotificationsSection: some View {
+        Section {
+            Toggle(
+                "Push Notifications",
+                isOn: Binding(
+                    get: { pushService.isPushEnabled },
+                    set: { enabled in
+                        if enabled {
+                            pushService.enablePushNotifications()
+                        } else {
+                            pushService.disablePushNotifications()
+                        }
+                    }
+                )
+            )
+            .disabled(pushService.isRegistering)
+
+            // Show status based on authorization
+            switch pushService.authorizationStatus {
+            case .denied:
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                    Text("Notifications are disabled in Settings")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(.caption)
+                }
+
+            case .authorized where pushService.registeredDeviceId != nil:
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text("Push notifications enabled")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+            case .notDetermined:
+                Text("Tap the toggle to enable push notifications")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+            default:
+                EmptyView()
+            }
+
+            if pushService.isRegistering {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Registering device...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            if let error = pushService.error {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.red)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+        } header: {
+            HStack {
+                Image(systemName: "bell.badge.fill")
+                Text("Push Notifications")
+            }
+        } footer: {
+            Text("Receive alerts even when the app is closed")
+        }
     }
 
     private func errorView(_ message: String) -> some View {
@@ -211,6 +316,9 @@ struct NotificationSettingsView: View {
 
 #Preview {
     let env = AppEnvironment()
-    return NotificationSettingsView(notificationService: env.notificationService)
-        .environmentObject(env)
+    return NotificationSettingsView(
+        notificationService: env.notificationService,
+        pushService: env.pushNotificationService
+    )
+    .environmentObject(env)
 }

@@ -21,9 +21,6 @@ struct NotificationSettings: Codable, Equatable {
     let apyEnabled: Bool
     let apySeverity: NotificationSeverity
     let apyThreshold: Double
-
-    // Read-only info
-    let ntfyTopic: String?
 }
 
 // MARK: - Notification Severity
