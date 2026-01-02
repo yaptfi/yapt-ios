@@ -80,7 +80,7 @@ struct AddWalletView: View {
                     .textFieldStyle(.roundedBorder)
                     .autocapitalization(.none)
                     .autocorrectionDisabled()
-                    .onChange(of: viewModel.address) { _ in
+                    .onChange(of: viewModel.address) {
                         viewModel.validateAddress()
                     }
 

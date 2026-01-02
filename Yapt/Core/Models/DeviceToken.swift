@@ -54,12 +54,20 @@ extension DeviceRegistration {
         #else
         // Release builds: check if this is a TestFlight build
         // TestFlight builds use sandbox environment despite being release builds
+        return checkReceiptEnvironment()
+        #endif
+    }
+
+    private static func checkReceiptEnvironment() -> String {
+        // Note: appStoreReceiptURL is deprecated in iOS 18+, but remains the most
+        // reliable way to detect TestFlight vs App Store builds. The StoreKit 2
+        // alternative requires async/await and is more complex for this use case.
+        // The property still functions correctly and is the recommended approach
+        // for environment detection in push notification registration.
         if let receiptURL = Bundle.main.appStoreReceiptURL,
            receiptURL.lastPathComponent == "sandboxReceipt" {
             return "sandbox"
         }
-        // Production build from App Store
         return "production"
-        #endif
     }
 }

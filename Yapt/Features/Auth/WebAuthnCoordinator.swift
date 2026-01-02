@@ -136,7 +136,7 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
                     Logger.auth.error("Passkey request requires user interaction")
                 case .matchedExcludedCredential:
                     Logger.auth.error("Matched excluded credential")
-                @unknown default:
+                default:
                     Logger.auth.error("Unrecognized ASAuthorization error: \(authError.code.rawValue)")
                 }
             }
@@ -181,13 +181,25 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension WebAuthnCoordinator: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Get the first window scene
-        guard let scene = UIApplication.shared.connectedScenes
+        // Get the first foreground active window
+        if let scene = UIApplication.shared.connectedScenes
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-              let window = scene.windows.first else {
-            return UIWindow()
+           let window = scene.windows.first {
+            return window
         }
-        return window
+
+        // Fallback: use any available window scene
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            if let window = scene.windows.first {
+                return window
+            }
+            // Create a new window with the scene (avoids deprecated init())
+            return UIWindow(windowScene: scene)
+        }
+
+        // Last resort: should not happen in normal app lifecycle
+        Logger.auth.error("No window scene available for passkey presentation")
+        fatalError("No window scene available for passkey presentation")
     }
 }
 

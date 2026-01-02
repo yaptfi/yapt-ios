@@ -23,11 +23,28 @@ class ErrorHandler: ObservableObject {
 
     private let sessionManager: SessionManager
     private var cancellables = Set<AnyCancellable>()
+    private var autoDismissTask: DispatchWorkItem?
+    private var hasShownLogoutBanner = false
 
     // MARK: - Initialization
 
     init(sessionManager: SessionManager) {
         self.sessionManager = sessionManager
+
+        // Reset banner flag when user logs back in
+        sessionManager.$isAuthenticated
+            .sink { [weak self] isAuthenticated in
+                if isAuthenticated {
+                    // User logged in - reset flag
+                    self?.hasShownLogoutBanner = false
+                } else {
+                    // User logged out - immediately hide any banners
+                    if self?.showBanner == true {
+                        self?.dismissBanner()
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Error Handling
@@ -52,10 +69,31 @@ class ErrorHandler: ObservableObject {
     private func handleAuthError(_ error: APIError) {
         Logger.auth.warning("Auth error detected: \(error.localizedDescription)")
 
+        // Check if user was authenticated before logout
+        let wasAuthenticated = sessionManager.isAuthenticated
+
+        // Don't show banner if we already showed one for this logout session
+        guard wasAuthenticated && !hasShownLogoutBanner else {
+            if !wasAuthenticated {
+                Logger.auth.debug("Skipping error banner - user already logged out")
+            } else {
+                Logger.auth.debug("Skipping error banner - already shown for this session")
+            }
+
+            // Still need to logout if authenticated
+            if wasAuthenticated {
+                sessionManager.logout()
+            }
+            return
+        }
+
+        // Mark that we've shown the banner for this logout session
+        hasShownLogoutBanner = true
+
         // Clear session
         sessionManager.logout()
 
-        // Show banner
+        // Show banner to inform user why they were logged out
         let message: String
         if case .unauthorized = error {
             message = "Session expired. Please sign in again."
@@ -68,17 +106,26 @@ class ErrorHandler: ObservableObject {
 
     /// Display a banner message to the user
     private func showBanner(message: String) {
+        // Cancel any existing auto-dismiss task
+        autoDismissTask?.cancel()
+
         bannerMessage = message
         showBanner = true
 
         // Auto-dismiss after 5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+        let task = DispatchWorkItem { [weak self] in
             self?.dismissBanner()
         }
+        autoDismissTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: task)
     }
 
     /// Dismiss the current banner
     func dismissBanner() {
+        // Cancel auto-dismiss timer
+        autoDismissTask?.cancel()
+        autoDismissTask = nil
+
         showBanner = false
 
         // Clear message after animation completes
