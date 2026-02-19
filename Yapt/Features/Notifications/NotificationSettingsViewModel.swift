@@ -29,6 +29,7 @@ class NotificationSettingsViewModel: ObservableObject {
     @Published var apyEnabled: Bool = false
     @Published var apySeverity: NotificationSeverity = .default
     @Published var apyThresholdPercent: String = "5"  // Display as percentage (e.g., "5" for 5%)
+    @Published var apyWindow: APYWindow = .sevenDay
 
     // MARK: - Dependencies
 
@@ -129,6 +130,7 @@ class NotificationSettingsViewModel: ObservableObject {
 
         apyEnabled = settings.apyEnabled
         apySeverity = settings.apySeverity
+        apyWindow = settings.apyWindow
         // Convert from decimal (0.05) to percentage display (5)
         let percentValue = settings.apyThreshold * 100
         if percentValue.truncatingRemainder(dividingBy: 1) == 0 {
@@ -181,7 +183,8 @@ class NotificationSettingsViewModel: ObservableObject {
             depegSymbols: symbolsArray.isEmpty ? nil : symbolsArray,
             apyEnabled: apyEnabled,
             apySeverity: apySeverity,
-            apyThreshold: apyThresh
+            apyThreshold: apyThresh,
+            apyWindow: apyWindow
         )
     }
 }

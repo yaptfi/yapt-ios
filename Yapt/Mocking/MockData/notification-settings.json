@@ -7,6 +7,7 @@
     "depegSymbols": ["USDC", "USDT", "DAI"],
     "apyEnabled": true,
     "apySeverity": "default",
-    "apyThreshold": 0.05
+    "apyThreshold": 0.05,
+    "apyWindow": "7d"
   }
 }

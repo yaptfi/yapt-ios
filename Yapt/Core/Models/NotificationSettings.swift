@@ -21,6 +21,70 @@ struct NotificationSettings: Codable, Equatable {
     let apyEnabled: Bool
     let apySeverity: NotificationSeverity
     let apyThreshold: Double
+    let apyWindow: APYWindow
+
+    init(
+        depegEnabled: Bool,
+        depegSeverity: NotificationSeverity,
+        depegLowerThreshold: Double,
+        depegUpperThreshold: Double,
+        depegSymbols: [String]?,
+        apyEnabled: Bool,
+        apySeverity: NotificationSeverity,
+        apyThreshold: Double,
+        apyWindow: APYWindow = .sevenDay
+    ) {
+        self.depegEnabled = depegEnabled
+        self.depegSeverity = depegSeverity
+        self.depegLowerThreshold = depegLowerThreshold
+        self.depegUpperThreshold = depegUpperThreshold
+        self.depegSymbols = depegSymbols
+        self.apyEnabled = apyEnabled
+        self.apySeverity = apySeverity
+        self.apyThreshold = apyThreshold
+        self.apyWindow = apyWindow
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case depegEnabled
+        case depegSeverity
+        case depegLowerThreshold
+        case depegUpperThreshold
+        case depegSymbols
+        case apyEnabled
+        case apySeverity
+        case apyThreshold
+        case apyWindow
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        depegEnabled = try container.decode(Bool.self, forKey: .depegEnabled)
+        depegSeverity = try container.decode(NotificationSeverity.self, forKey: .depegSeverity)
+        depegLowerThreshold = try container.decode(Double.self, forKey: .depegLowerThreshold)
+        depegUpperThreshold = try container.decode(Double.self, forKey: .depegUpperThreshold)
+        depegSymbols = try container.decodeIfPresent([String].self, forKey: .depegSymbols)
+        apyEnabled = try container.decode(Bool.self, forKey: .apyEnabled)
+        apySeverity = try container.decode(NotificationSeverity.self, forKey: .apySeverity)
+        apyThreshold = try container.decode(Double.self, forKey: .apyThreshold)
+        apyWindow = try container.decodeIfPresent(APYWindow.self, forKey: .apyWindow) ?? .sevenDay
+    }
+}
+
+// MARK: - APY Window
+
+enum APYWindow: String, Codable, CaseIterable, Identifiable {
+    case sevenDay = "7d"
+    case fourHour = "4h"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .sevenDay: return "7-day"
+        case .fourHour: return "4-hour"
+        }
+    }
 }
 
 // MARK: - Notification Severity

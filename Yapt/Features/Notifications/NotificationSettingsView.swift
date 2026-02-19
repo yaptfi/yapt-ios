@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct NotificationSettingsView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
@@ -126,6 +127,20 @@ struct NotificationSettingsView: View {
                         }
                     }
 
+                    VStack(alignment: .leading, spacing: 6) {
+                        Picker("APY Window", selection: $viewModel.apyWindow) {
+                            ForEach(APYWindow.allCases) { window in
+                                Text(window.displayName)
+                                    .tag(window)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Text("7-day APY is smoother and avoids false alarms from short-term fluctuations")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
                     HStack {
                         Text("Minimum APY")
                         Spacer()
@@ -164,6 +179,10 @@ struct NotificationSettingsView: View {
                         Spacer()
                         if viewModel.isSaving {
                             ProgressView()
+                        } else if viewModel.successMessage != nil {
+                            Label("Saved", systemImage: "checkmark.circle.fill")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
                         } else {
                             Text("Save Settings")
                                 .fontWeight(.semibold)
@@ -207,6 +226,12 @@ struct NotificationSettingsView: View {
                     focusedField = nil
                 }
             }
+        }
+        .onChange(of: viewModel.successMessage) {
+            guard viewModel.successMessage != nil else { return }
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(.success)
         }
     }
 
