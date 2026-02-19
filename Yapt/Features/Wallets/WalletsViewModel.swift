@@ -17,7 +17,8 @@ class WalletsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let walletService: WalletService
-    private var cancellables = Set<AnyCancellable>()
+    private var loadCancellable: AnyCancellable?
+    private var deleteCancellables: [UUID: AnyCancellable] = [:]
 
     init(walletService: WalletService) {
         self.walletService = walletService
@@ -29,11 +30,13 @@ class WalletsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        walletService.fetchWallets()
+        loadCancellable?.cancel()
+        loadCancellable = walletService.fetchWallets()
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load wallets: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -44,7 +47,6 @@ class WalletsViewModel: ObservableObject {
                     Logger.ui.debug("Loaded \(wallets.count) wallets")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func refresh() {
@@ -53,11 +55,13 @@ class WalletsViewModel: ObservableObject {
         isRefreshing = true
         errorMessage = nil
 
-        walletService.fetchWallets(forceRefresh: true)
+        loadCancellable?.cancel()
+        loadCancellable = walletService.fetchWallets(forceRefresh: true)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isRefreshing = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to refresh wallets: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -68,7 +72,6 @@ class WalletsViewModel: ObservableObject {
                     Logger.ui.debug("Refreshed wallets")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func clearError() {
@@ -83,10 +86,12 @@ class WalletsViewModel: ObservableObject {
         // Optimistically remove from UI
         wallets.removeAll { $0.id == wallet.id }
 
-        walletService.deleteWallet(walletId: wallet.id)
+        let requestID = UUID()
+        let cancellable = walletService.deleteWallet(walletId: wallet.id)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
+                    self?.deleteCancellables[requestID] = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to delete wallet: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -100,6 +105,6 @@ class WalletsViewModel: ObservableObject {
                     // Success - wallet already removed optimistically
                 }
             )
-            .store(in: &cancellables)
+        deleteCancellables[requestID] = cancellable
     }
 }

@@ -35,7 +35,7 @@ class DashboardViewModel: ObservableObject {
     private let portfolioService: PortfolioService
     private let positionService: PositionService
     private let portfolioValueCache: PortfolioValueCache
-    private var cancellables = Set<AnyCancellable>()
+    private var loadCancellable: AnyCancellable?
     private let animationThreshold: Double = 1
 
     init(
@@ -79,7 +79,8 @@ class DashboardViewModel: ObservableObject {
 
         errorMessage = nil
 
-        Publishers.CombineLatest(
+        loadCancellable?.cancel()
+        loadCancellable = Publishers.CombineLatest(
             portfolioService.fetchSummary(forceRefresh: forceRefresh),
             positionService.fetchPositions(forceRefresh: forceRefresh)
         )
@@ -97,12 +98,34 @@ class DashboardViewModel: ObservableObject {
                     Logger.ui.error("Failed to load portfolio: \(error.localizedDescription)")
                     self.errorMessage = error.localizedDescription
                 }
+
+                self.loadCancellable = nil
             },
             receiveValue: { [weak self] summary, positionsResponse in
                 self?.applyLoadedData(summary: summary, positionsResponse: positionsResponse)
             }
         )
-        .store(in: &cancellables)
+    }
+
+    // MARK: - Performance Calculations
+
+    var performance1D: Double? {
+        guard let summary = summary, let yields = actualYields,
+              summary.estDailyUsd > 0 else { return nil }
+        return (yields.actual24hYield / summary.estDailyUsd) - 1
+    }
+
+    var performance7D: Double? {
+        guard let summary = summary, let yields = actualYields else { return nil }
+        let expected7d = summary.estDailyUsd * 7
+        guard expected7d > 0 else { return nil }
+        return (yields.actual7dYield / expected7d) - 1
+    }
+
+    var performance30D: Double? {
+        guard let summary = summary, let yields = actualYields,
+              summary.estMonthlyUsd > 0 else { return nil }
+        return (yields.actual30dYield / summary.estMonthlyUsd) - 1
     }
 
     private func applyLoadedData(summary: PortfolioSummary, positionsResponse: PositionsResponse) {

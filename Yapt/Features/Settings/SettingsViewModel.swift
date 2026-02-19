@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Combine
 import OSLog
+import Combine
 
 @MainActor
 class SettingsViewModel: ObservableObject {
@@ -16,7 +16,6 @@ class SettingsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let authService: AuthService
-    private var cancellables = Set<AnyCancellable>()
 
     init(authService: AuthService) {
         self.authService = authService

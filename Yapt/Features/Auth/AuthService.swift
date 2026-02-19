@@ -110,26 +110,26 @@ class AuthService: ObservableObject {
 }
 
 // MARK: - Combine Publisher Extension
-extension Publisher {
-    func async() async throws -> Output {
-        try await withCheckedThrowingContinuation { continuation in
-            var cancellable: AnyCancellable?
+private enum PublisherAsyncBridgeError: LocalizedError {
+    case finishedWithoutValue
 
-            cancellable = self.sink(
-                receiveCompletion: { completion in
-                    switch completion {
-                    case .finished:
-                        break
-                    case .failure(let error):
-                        continuation.resume(throwing: error)
-                    }
-                    cancellable?.cancel()
-                },
-                receiveValue: { value in
-                    continuation.resume(returning: value)
-                }
-            )
+    var errorDescription: String? {
+        switch self {
+        case .finishedWithoutValue:
+            return "The operation finished without returning a value."
         }
+    }
+}
+
+extension Publisher where Failure: Error {
+    func async() async throws -> Output {
+        var iterator = self.values.makeAsyncIterator()
+
+        if let value = try await iterator.next() {
+            return value
+        }
+
+        throw PublisherAsyncBridgeError.finishedWithoutValue
     }
 }
 

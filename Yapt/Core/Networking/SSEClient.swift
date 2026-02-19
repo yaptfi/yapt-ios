@@ -43,6 +43,9 @@ class SSEClient: NSObject, ObservableObject {
         sseRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         sseRequest.timeoutInterval = .infinity
 
+        // A completed subject cannot be reused across streams.
+        // Recreate it for each new stream so new subscribers receive events.
+        eventSubject = PassthroughSubject<String, APIError>()
         buffer = Data()
         task = session?.dataTask(with: sseRequest)
 

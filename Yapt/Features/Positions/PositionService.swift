@@ -11,8 +11,7 @@ import OSLog
 
 class PositionService {
     private let apiClient: APIClient
-    private var cachedResponse: PositionsResponse?
-    private var lastFetchTime: Date?
+    private let positionsCache = TimedMemoryCache<PositionsResponse>()
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -22,9 +21,7 @@ class PositionService {
     func fetchPositions(forceRefresh: Bool = false) -> AnyPublisher<PositionsResponse, APIError> {
         // Check cache
         if !forceRefresh,
-           let cached = cachedResponse,
-           let lastFetch = lastFetchTime,
-           Date().timeIntervalSince(lastFetch) < Constants.Cache.positionsTTL {
+           let cached = positionsCache.valueIfValid(ttl: Constants.Cache.positionsTTL) {
             Logger.cache.debug("Returning cached positions")
             return Just(cached)
                 .setFailureType(to: APIError.self)
@@ -37,8 +34,7 @@ class PositionService {
         return apiClient.request(endpoint)
             .handleEvents(
                 receiveOutput: { [weak self] (response: PositionsResponse) in
-                    self?.cachedResponse = response
-                    self?.lastFetchTime = Date()
+                    self?.positionsCache.store(response)
                     Logger.cache.debug("Cached positions: \(response.positions.count) positions")
                 }
             )
@@ -66,7 +62,6 @@ class PositionService {
     }
 
     func clearCache() {
-        cachedResponse = nil
-        lastFetchTime = nil
+        positionsCache.clear()
     }
 }

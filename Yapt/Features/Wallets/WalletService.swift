@@ -12,8 +12,7 @@ import OSLog
 class WalletService {
     private let apiClient: APIClient
     private let sseClient: SSEClient
-    private var cachedWallets: [Wallet]?
-    private var lastFetchTime: Date?
+    private let walletsCache = TimedMemoryCache<[Wallet]>()
 
     init(apiClient: APIClient, sseClient: SSEClient) {
         self.apiClient = apiClient
@@ -24,9 +23,7 @@ class WalletService {
     func fetchWallets(forceRefresh: Bool = false) -> AnyPublisher<[Wallet], APIError> {
         // Check cache
         if !forceRefresh,
-           let cached = cachedWallets,
-           let lastFetch = lastFetchTime,
-           Date().timeIntervalSince(lastFetch) < Constants.Cache.walletsTTL {
+           let cached = walletsCache.valueIfValid(ttl: Constants.Cache.walletsTTL) {
             Logger.cache.debug("Returning cached wallets")
             return Just(cached)
                 .setFailureType(to: APIError.self)
@@ -40,8 +37,7 @@ class WalletService {
             .map { (response: WalletsResponse) in response.wallets }
             .handleEvents(
                 receiveOutput: { [weak self] wallets in
-                    self?.cachedWallets = wallets
-                    self?.lastFetchTime = Date()
+                    self?.walletsCache.store(wallets)
                     Logger.cache.debug("Cached wallets: \(wallets.count) wallets")
                 }
             )
@@ -49,8 +45,7 @@ class WalletService {
     }
 
     func clearCache() {
-        cachedWallets = nil
-        lastFetchTime = nil
+        walletsCache.clear()
     }
 
     // MARK: - Add Wallet with Discovery
@@ -116,6 +111,9 @@ class WalletService {
                     }
                     // Stop SSE stream
                     self?.sseClient.stopStreaming()
+                },
+                receiveCancel: { [weak self] in
+                    self?.sseClient.stopStreaming()
                 }
             )
             .eraseToAnyPublisher()
@@ -171,6 +169,9 @@ class WalletService {
                         self?.clearCache()
                     }
                     // Stop SSE stream
+                    self?.sseClient.stopStreaming()
+                },
+                receiveCancel: { [weak self] in
                     self?.sseClient.stopStreaming()
                 }
             )

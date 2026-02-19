@@ -11,7 +11,7 @@ import OSLog
 
 class NotificationService {
     private let apiClient: APIClient
-    private var settingsCache: CachedValue<NotificationSettings>?
+    private let settingsCache = TimedMemoryCache<NotificationSettings>()
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -22,9 +22,9 @@ class NotificationService {
     /// Fetch notification settings
     func fetchSettings(forceRefresh: Bool = false) -> AnyPublisher<NotificationSettings, APIError> {
         // Check cache
-        if !forceRefresh, let cached = settingsCache, cached.isValid {
+        if !forceRefresh, let cached = settingsCache.valueIfValid(ttl: 300) {
             Logger.network.debug("Returning cached notification settings")
-            return Just(cached.data)
+            return Just(cached)
                 .setFailureType(to: APIError.self)
                 .eraseToAnyPublisher()
         }
@@ -35,7 +35,7 @@ class NotificationService {
             .map { (response: NotificationSettingsResponse) -> NotificationSettings in
                 let settings = response.settings
                 // Cache with 5 minute TTL
-                self.settingsCache = CachedValue(data: settings, ttl: 300)
+                self.settingsCache.store(settings)
                 Logger.network.debug("Fetched notification settings from API")
                 return settings
             }
@@ -55,7 +55,7 @@ class NotificationService {
                 .map { (response: NotificationSettingsResponse) -> NotificationSettings in
                     let updatedSettings = response.settings
                     // Update cache
-                    self.settingsCache = CachedValue(data: updatedSettings, ttl: 300)
+                    self.settingsCache.store(updatedSettings)
                     Logger.network.info("Updated notification settings")
                     return updatedSettings
                 }
@@ -138,22 +138,8 @@ class NotificationService {
             })
             .eraseToAnyPublisher()
     }
-}
 
-// MARK: - Cached Value
-
-private struct CachedValue<T> {
-    let data: T
-    let timestamp: Date
-    let ttl: TimeInterval
-
-    init(data: T, ttl: TimeInterval) {
-        self.data = data
-        self.timestamp = Date()
-        self.ttl = ttl
-    }
-
-    var isValid: Bool {
-        Date().timeIntervalSince(timestamp) < ttl
+    func clearCache() {
+        settingsCache.clear()
     }
 }

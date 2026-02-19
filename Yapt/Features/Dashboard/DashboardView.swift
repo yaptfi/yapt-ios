@@ -14,6 +14,10 @@ struct DashboardView: View {
     @State private var hasAnimatedTotalValue = false
     @State private var activeFloatingDelta: FloatingDelta?
     @State private var floatingDeltaRemovalTask: DispatchWorkItem?
+    @State private var isDashboardVisible = false
+    @State private var isTotalPortfolioSectionVisible = false
+    @State private var pendingValueAnimationTrigger: PortfolioValueAnimationTrigger?
+    @State private var lastHandledValueAnimationTriggerID: UUID?
 
     init(portfolioService: PortfolioService, positionService: PositionService, portfolioValueCache: PortfolioValueCache) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
@@ -41,9 +45,11 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                // Always load on appear - service will use cache if valid
+                isDashboardVisible = true
                 viewModel.loadSummary()
                 initializeAnimatedValueIfNeeded()
+                handleValueAnimationTriggerChange(viewModel.valueAnimationTrigger)
+                playPendingValueAnimationIfPossible()
             }
             .onChange(of: viewModel.cachedTotalValue) { _, _ in
                 initializeAnimatedValueIfNeeded()
@@ -52,18 +58,18 @@ struct DashboardView: View {
                 initializeAnimatedValueIfNeeded()
             }
             .onChange(of: viewModel.valueAnimationTrigger?.id) { _, _ in
-                guard let trigger = viewModel.valueAnimationTrigger else { return }
-                startValueAnimation(using: trigger)
+                handleValueAnimationTriggerChange(viewModel.valueAnimationTrigger)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                // Force refresh when app returns from background
-                // Always fetch fresh data, bypassing cache
                 viewModel.refresh()
             }
         }
         .onDisappear {
+            isDashboardVisible = false
+            isTotalPortfolioSectionVisible = false
             floatingDeltaRemovalTask?.cancel()
             floatingDeltaRemovalTask = nil
+            activeFloatingDelta = nil
         }
     }
 
@@ -71,90 +77,39 @@ struct DashboardView: View {
     private func contentView(_ summary: PortfolioSummary) -> some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Total Value Card
-                PortfolioTotalValueCard(
-                    subtitle: "Last updated \(summary.lastUpdated)",
-                    displayedValue: hasAnimatedTotalValue ? animatedTotalValue : nil,
+                // 1. Total Portfolio Section (plain text, no card)
+                TotalPortfolioSection(
+                    displayedValue: hasAnimatedTotalValue ? animatedTotalValue : summary.totalValueUsd,
                     isLoading: viewModel.isRefreshing,
-                    floatingDelta: activeFloatingDelta
+                    floatingDelta: activeFloatingDelta,
+                    onVisibilityChanged: handleTotalPortfolioSectionVisibilityChange(_:)
                 )
 
-                // Projected Income Section (Highlighted - "Can I live off this?")
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .foregroundColor(.orange)
-                        Text("Projected Income")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                    }
-
-                    Text("Estimated based on current APY")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    HStack(spacing: 12) {
-                        ProjectedIncomeCard(
-                            title: "Daily",
-                            value: summary.estDailyUsd.asCurrency()
-                        )
-                        ProjectedIncomeCard(
-                            title: "Monthly",
-                            value: summary.estMonthlyUsd.asCurrency()
-                        )
-                        ProjectedIncomeCard(
-                            title: "Yearly",
-                            value: summary.estYearlyUsd.asCurrency()
-                        )
-                    }
-                }
-                .padding()
-                .background(
-                    LinearGradient(
-                        colors: [Color.orange.opacity(0.15), Color.yellow.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                // 2. Annual Projected Income Card (blue gradient)
+                AnnualProjectedIncomeCard(
+                    yearlyValue: summary.estYearlyUsd,
+                    monthlyValue: summary.estMonthlyUsd
                 )
-                .cornerRadius(16)
-                .shadow(color: Color.orange.opacity(0.1), radius: 8, x: 0, y: 4)
 
-                // Actual Yields Section ("How much did I make lately?")
+                // 3. Received Income Card
                 if let actualYields = viewModel.actualYields {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "dollarsign.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Actual Earnings")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                        }
+                    ReceivedIncomeCard(yields: actualYields)
+                }
 
-                        Text("What you've actually earned")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                // 4. Expected Income Card
+                ExpectedIncomeCard(
+                    dailyValue: summary.estDailyUsd,
+                    weeklyValue: summary.estDailyUsd * 7,
+                    monthlyValue: summary.estMonthlyUsd
+                )
 
-                        HStack(spacing: 12) {
-                            ActualYieldCard(
-                                title: "24h",
-                                value: actualYields.actual24hYield.asCurrency()
-                            )
-                            ActualYieldCard(
-                                title: "7d",
-                                value: actualYields.actual7dYield.asCurrency()
-                            )
-                            ActualYieldCard(
-                                title: "30d",
-                                value: actualYields.actual30dYield.asCurrency()
-                            )
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                // 5. Performance vs Expected Section
+                if viewModel.actualYields != nil {
+                    PerformanceSection(
+                        performance1D: viewModel.performance1D,
+                        performance7D: viewModel.performance7D,
+                        performance30D: viewModel.performance30D
+                    )
                 }
 
                 if let errorMessage = viewModel.errorMessage {
@@ -175,11 +130,11 @@ struct DashboardView: View {
     private func cachedContentView(value: Double) -> some View {
         ScrollView {
             VStack(spacing: 20) {
-                PortfolioTotalValueCard(
-                    subtitle: cachedSubtitle,
+                TotalPortfolioSection(
                     displayedValue: hasAnimatedTotalValue ? animatedTotalValue : value,
                     isLoading: true,
-                    floatingDelta: activeFloatingDelta
+                    floatingDelta: activeFloatingDelta,
+                    onVisibilityChanged: handleTotalPortfolioSectionVisibilityChange(_:)
                 )
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -205,13 +160,6 @@ struct DashboardView: View {
         .refreshable {
             viewModel.refresh()
         }
-    }
-
-    private var cachedSubtitle: String {
-        if let timestamp = viewModel.cachedTotalValueTimestamp {
-            return "Last seen \(timestamp.asRelativeString())"
-        }
-        return "Last seen recently"
     }
 
     private var emptyView: some View {
@@ -267,6 +215,42 @@ struct DashboardView: View {
         spawnFloatingDelta(amount: trigger.delta)
     }
 
+    private var shouldPlayValueAnimation: Bool {
+        isDashboardVisible && isTotalPortfolioSectionVisible
+    }
+
+    private func handleValueAnimationTriggerChange(_ trigger: PortfolioValueAnimationTrigger?) {
+        guard let trigger else {
+            pendingValueAnimationTrigger = nil
+            return
+        }
+
+        guard lastHandledValueAnimationTriggerID != trigger.id else { return }
+
+        if shouldPlayValueAnimation {
+            lastHandledValueAnimationTriggerID = trigger.id
+            startValueAnimation(using: trigger)
+        } else {
+            pendingValueAnimationTrigger = trigger
+        }
+    }
+
+    private func handleTotalPortfolioSectionVisibilityChange(_ isVisible: Bool) {
+        isTotalPortfolioSectionVisible = isVisible
+        if isVisible {
+            playPendingValueAnimationIfPossible()
+        }
+    }
+
+    private func playPendingValueAnimationIfPossible() {
+        guard shouldPlayValueAnimation,
+              let pendingTrigger = pendingValueAnimationTrigger else { return }
+
+        pendingValueAnimationTrigger = nil
+        lastHandledValueAnimationTriggerID = pendingTrigger.id
+        startValueAnimation(using: pendingTrigger)
+    }
+
     private func spawnFloatingDelta(amount: Double) {
         guard abs(amount) >= 1 else { return }
 
@@ -288,70 +272,32 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Metric Cards
-struct MetricCard: View {
-    let title: String
-    let value: String
-    let subtitle: String?
-    let backgroundColor: Color
+// MARK: - Total Portfolio Section (Plain text, no card)
 
-    init(title: String, value: String, subtitle: String? = nil, backgroundColor: Color = .blue) {
-        self.title = title
-        self.value = value
-        self.subtitle = subtitle
-        self.backgroundColor = backgroundColor
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.white.opacity(0.9))
-
-            Text(value)
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .monospacedDigit()
-
-            if let subtitle = subtitle {
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(backgroundColor.gradient)
-        .cornerRadius(12)
-    }
-}
-
-// MARK: - Portfolio Hero Card
-struct PortfolioTotalValueCard: View {
-    let subtitle: String?
+struct TotalPortfolioSection: View {
     let displayedValue: Double?
     let isLoading: Bool
     let floatingDelta: FloatingDelta?
+    let onVisibilityChanged: ((Bool) -> Void)?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Total Value")
+                Text("Total Portfolio")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(.secondary)
                 Spacer()
                 if isLoading {
                     ProgressView()
                         .scaleEffect(0.7)
                         .progressViewStyle(.circular)
-                        .tint(.white.opacity(0.8))
                 }
             }
 
             if let value = displayedValue {
                 AnimatedCurrencyText(value: value)
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
                     .monospacedDigit()
                     .overlay(alignment: .trailing) {
                         if let delta = floatingDelta {
@@ -361,16 +307,47 @@ struct PortfolioTotalValueCard: View {
                     }
             } else {
                 Text("--")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.7))
-                    .monospacedDigit()
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, 8)
+        .onAppear {
+            onVisibilityChanged?(true)
+        }
+        .onDisappear {
+            onVisibilityChanged?(false)
+        }
+    }
+}
+
+// MARK: - Annual Projected Income Card (Blue gradient)
+
+struct AnnualProjectedIncomeCard: View {
+    let yearlyValue: Double
+    let monthlyValue: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+                Text("Annual Projected Income")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white.opacity(0.9))
             }
 
-            if let subtitle = subtitle {
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
-            }
+            Text(yearlyValue.asCurrency())
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .monospacedDigit()
+
+            Text("\(monthlyValue.asCurrency())/month")
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.8))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -379,6 +356,201 @@ struct PortfolioTotalValueCard: View {
         .shadow(color: Color.blue.opacity(0.25), radius: 12, x: 0, y: 6)
     }
 }
+
+// MARK: - Income Row Item (Reusable)
+
+struct IncomeRowItem: View {
+    let label: String
+    let value: String
+    let valueColor: Color
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(valueColor)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Received Income Card
+
+struct ReceivedIncomeCard: View {
+    let yields: PositionSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.green)
+                Text("Earned")
+                    .font(.headline)
+                    .foregroundColor(.green)
+            }
+
+            Text("Income already in your wallet")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 0) {
+                IncomeRowItem(
+                    label: "Last 24h",
+                    value: yields.actual24hYield.asCurrency(),
+                    valueColor: .green
+                )
+                Divider()
+                IncomeRowItem(
+                    label: "Last 7 days",
+                    value: yields.actual7dYield.asCurrency(),
+                    valueColor: .green
+                )
+                Divider()
+                IncomeRowItem(
+                    label: "Last 30 days",
+                    value: yields.actual30dYield.asCurrency(),
+                    valueColor: .green
+                )
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Expected Income Card
+
+struct ExpectedIncomeCard: View {
+    let dailyValue: Double
+    let weeklyValue: Double
+    let monthlyValue: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "target")
+                    .font(.system(size: 18))
+                    .foregroundColor(.blue)
+                Text("Expected")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+            }
+
+            Text("Projected income")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 0) {
+                IncomeRowItem(
+                    label: "Next 24h",
+                    value: dailyValue.asCurrency(),
+                    valueColor: .blue
+                )
+                Divider()
+                IncomeRowItem(
+                    label: "Next 7 days",
+                    value: weeklyValue.asCurrency(),
+                    valueColor: .blue
+                )
+                Divider()
+                IncomeRowItem(
+                    label: "Next 30 days",
+                    value: monthlyValue.asCurrency(),
+                    valueColor: .blue
+                )
+            }
+        }
+        .padding()
+        .background(Color.blue.opacity(0.08))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Performance Badge
+
+struct PerformanceBadge: View {
+    let period: String
+    let percentage: Double?
+
+    private var isPositive: Bool {
+        (percentage ?? 0) >= 0
+    }
+
+    private var displayPercentage: String {
+        guard let pct = percentage else { return "--" }
+        let absValue = abs(pct * 100)
+        let formatted = String(format: "%.1f%%", absValue)
+        return isPositive ? "+\(formatted)" : "-\(formatted)"
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 2) {
+                Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
+                    .font(.system(size: 10, weight: .bold))
+                Text(displayPercentage)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+            }
+            .foregroundColor(isPositive ? .green : .red)
+
+            Text(period)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Performance Section
+
+struct PerformanceSection: View {
+    let performance1D: Double?
+    let performance7D: Double?
+    let performance30D: Double?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PERFORMANCE VS EXPECTED")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+                .tracking(1)
+
+            HStack(spacing: 8) {
+                PerformanceBadge(period: "1D", percentage: performance1D)
+                PerformanceBadge(period: "7D", percentage: performance7D)
+                PerformanceBadge(period: "30D", percentage: performance30D)
+            }
+        }
+        .padding(.top, 8)
+    }
+}
+
+// MARK: - Floating Delta
 
 struct FloatingDelta: Identifiable, Equatable {
     let id = UUID()
@@ -450,57 +622,7 @@ struct FloatingValueDeltaView: View {
     }
 }
 
-struct ActualYieldCard: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(.primary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 60)
-        .padding(.horizontal, 8)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-}
-
-struct ProjectedIncomeCard: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(.primary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 60)
-        .padding(.horizontal, 8)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-}
+// MARK: - Position Row (kept for potential future use)
 
 /// Generic position row that works with any PositionDisplayable
 struct PositionRow<P: PositionDisplayable>: View {

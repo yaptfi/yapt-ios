@@ -33,7 +33,9 @@ class NotificationSettingsViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let notificationService: NotificationService
-    private var cancellables = Set<AnyCancellable>()
+    private var loadCancellable: AnyCancellable?
+    private var saveCancellable: AnyCancellable?
+    private var successDismissTask: DispatchWorkItem?
 
     init(notificationService: NotificationService) {
         self.notificationService = notificationService
@@ -47,11 +49,13 @@ class NotificationSettingsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        notificationService.fetchSettings()
+        loadCancellable?.cancel()
+        loadCancellable = notificationService.fetchSettings()
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load notification settings: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -63,7 +67,6 @@ class NotificationSettingsViewModel: ObservableObject {
                     Logger.ui.debug("Loaded notification settings")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func saveSettings() {
@@ -77,11 +80,13 @@ class NotificationSettingsViewModel: ObservableObject {
         errorMessage = nil
         successMessage = nil
 
-        notificationService.updateSettings(updatedSettings)
+        saveCancellable?.cancel()
+        saveCancellable = notificationService.updateSettings(updatedSettings)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isSaving = false
+                    self?.saveCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to save notification settings: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -93,12 +98,14 @@ class NotificationSettingsViewModel: ObservableObject {
                     Logger.ui.info("Saved notification settings")
 
                     // Clear success message after 3 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    self?.successDismissTask?.cancel()
+                    let dismissTask = DispatchWorkItem { [weak self] in
                         self?.successMessage = nil
                     }
+                    self?.successDismissTask = dismissTask
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: dismissTask)
                 }
             )
-            .store(in: &cancellables)
     }
 
     func clearError() {
@@ -106,6 +113,8 @@ class NotificationSettingsViewModel: ObservableObject {
     }
 
     func clearSuccess() {
+        successDismissTask?.cancel()
+        successDismissTask = nil
         successMessage = nil
     }
 

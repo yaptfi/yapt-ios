@@ -22,7 +22,8 @@ class WalletDetailViewModel: ObservableObject {
     // MARK: - Dependencies
     private let walletService: WalletService
     private let positionService: PositionService
-    private var cancellables = Set<AnyCancellable>()
+    private var positionsCancellable: AnyCancellable?
+    private var rescanCancellable: AnyCancellable?
 
     init(wallet: Wallet, walletService: WalletService, positionService: PositionService) {
         self.wallet = wallet
@@ -36,12 +37,14 @@ class WalletDetailViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        positionService.fetchPositions()
+        positionsCancellable?.cancel()
+        positionsCancellable = positionService.fetchPositions()
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     guard let self = self else { return }
                     self.isLoading = false
+                    self.positionsCancellable = nil
 
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load positions: \(error.localizedDescription)")
@@ -55,7 +58,6 @@ class WalletDetailViewModel: ObservableObject {
                     Logger.ui.info("Loaded \(self.positions.count) positions for wallet \(self.wallet.address)")
                 }
             )
-            .store(in: &cancellables)
     }
 
     // MARK: - Rescan Wallet
@@ -71,11 +73,13 @@ class WalletDetailViewModel: ObservableObject {
         isRescanning = true
 
         // Start rescan stream
-        walletService.rescanWallet(walletId: wallet.id)
+        rescanCancellable?.cancel()
+        rescanCancellable = walletService.rescanWallet(walletId: wallet.id)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     guard let self = self else { return }
+                    self.rescanCancellable = nil
 
                     switch completion {
                     case .finished:
@@ -96,7 +100,6 @@ class WalletDetailViewModel: ObservableObject {
                     self.handleDiscoveryEvent(event)
                 }
             )
-            .store(in: &cancellables)
     }
 
     private func handleDiscoveryEvent(_ event: DiscoveryEvent) {

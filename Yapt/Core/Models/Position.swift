@@ -12,6 +12,18 @@ enum CountingMode: String, Codable {
     case count
     case partial
     case ignore
+    case unknown
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = CountingMode(rawValue: rawValue) ?? .unknown
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 enum MeasureMethod: String, Codable {
@@ -21,9 +33,22 @@ enum MeasureMethod: String, Codable {
     case subgraph
     case rewards
     case lpPosition = "lp-position"
+    case fixedIncome = "fixed-income"
+    case unknown
 
     var isRewardBased: Bool {
         self == .rewards
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = MeasureMethod(rawValue: rawValue) ?? .unknown
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 

@@ -42,6 +42,9 @@ struct YaptApp: App {
                 .environmentObject(appEnvironment.sessionManager)
                 .environmentObject(appEnvironment)
                 .onAppear {
+                    let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+                    guard !isRunningTests else { return }
+
                     // Restore session on app startup
                     appEnvironment.sessionManager.restoreSession()
 

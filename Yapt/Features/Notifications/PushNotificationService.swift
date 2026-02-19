@@ -28,7 +28,7 @@ class PushNotificationService: NSObject, ObservableObject {
 
     // MARK: - Initialization
 
-    init(notificationService: NotificationService) {
+    init(notificationService: NotificationService, registerAsNotificationDelegate: Bool = true) {
         self.notificationService = notificationService
         super.init()
 
@@ -38,8 +38,10 @@ class PushNotificationService: NSObject, ObservableObject {
         // Check current authorization status
         refreshAuthorizationStatus()
 
-        // Set ourselves as the notification center delegate
-        UNUserNotificationCenter.current().delegate = self
+        if registerAsNotificationDelegate {
+            // App runtime only: tests don't need global notification delegate wiring.
+            UNUserNotificationCenter.current().delegate = self
+        }
     }
 
     // MARK: - Public Methods

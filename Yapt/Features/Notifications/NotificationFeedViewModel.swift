@@ -29,7 +29,8 @@ class NotificationFeedViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let notificationService: NotificationService
-    private var cancellables = Set<AnyCancellable>()
+    private var loadCancellable: AnyCancellable?
+    private var loadMoreCancellable: AnyCancellable?
 
     init(notificationService: NotificationService) {
         self.notificationService = notificationService
@@ -44,11 +45,13 @@ class NotificationFeedViewModel: ObservableObject {
         currentOffset = 0
         errorMessage = nil
 
-        notificationService.fetchHistory(limit: pageSize, offset: 0, type: selectedType)
+        loadCancellable?.cancel()
+        loadCancellable = notificationService.fetchHistory(limit: pageSize, offset: 0, type: selectedType)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load notifications: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -61,7 +64,6 @@ class NotificationFeedViewModel: ObservableObject {
                     Logger.ui.debug("Loaded \(response.notifications.count) notifications")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func refresh() {
@@ -71,11 +73,13 @@ class NotificationFeedViewModel: ObservableObject {
         currentOffset = 0
         errorMessage = nil
 
-        notificationService.fetchHistory(limit: pageSize, offset: 0, type: selectedType)
+        loadCancellable?.cancel()
+        loadCancellable = notificationService.fetchHistory(limit: pageSize, offset: 0, type: selectedType)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isRefreshing = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to refresh notifications: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -88,7 +92,6 @@ class NotificationFeedViewModel: ObservableObject {
                     Logger.ui.debug("Refreshed notifications")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func loadMore() {
@@ -96,11 +99,13 @@ class NotificationFeedViewModel: ObservableObject {
 
         isLoadingMore = true
 
-        notificationService.fetchHistory(limit: pageSize, offset: currentOffset, type: selectedType)
+        loadMoreCancellable?.cancel()
+        loadMoreCancellable = notificationService.fetchHistory(limit: pageSize, offset: currentOffset, type: selectedType)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoadingMore = false
+                    self?.loadMoreCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load more notifications: \(error.localizedDescription)")
                         // Don't overwrite existing error message for "load more" failures
@@ -113,7 +118,6 @@ class NotificationFeedViewModel: ObservableObject {
                     Logger.ui.debug("Loaded \(response.notifications.count) more notifications")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func filterByType(_ type: NotificationType?) {

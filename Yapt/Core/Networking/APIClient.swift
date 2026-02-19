@@ -29,24 +29,41 @@ class APIClient {
 
         // Configure JSON decoder
         self.decoder = JSONDecoder()
+        self.decoder.keyDecodingStrategy = .convertFromSnakeCase
         self.decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
-            let dateString = try container.decode(String.self)
 
-            // Try ISO8601 with fractional seconds first
-            if let date = Formatters.iso8601.date(from: dateString) {
-                return date
+            if let dateString = try? container.decode(String.self) {
+                // Try ISO8601 with fractional seconds first
+                if let date = Formatters.iso8601.date(from: dateString) {
+                    return date
+                }
+
+                // Fallback to standard ISO8601
+                let fallbackFormatter = ISO8601DateFormatter()
+                if let date = fallbackFormatter.date(from: dateString) {
+                    return date
+                }
+
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Cannot decode date string \(dateString)"
+                )
             }
 
-            // Fallback to standard ISO8601
-            let fallbackFormatter = ISO8601DateFormatter()
-            if let date = fallbackFormatter.date(from: dateString) {
-                return date
+            if let timestamp = try? container.decode(Double.self) {
+                let seconds = timestamp > 1_000_000_000_000 ? timestamp / 1000 : timestamp
+                return Date(timeIntervalSince1970: seconds)
+            }
+
+            if let timestamp = try? container.decode(Int64.self) {
+                let seconds = timestamp > 1_000_000_000_000 ? Double(timestamp) / 1000 : Double(timestamp)
+                return Date(timeIntervalSince1970: seconds)
             }
 
             throw DecodingError.dataCorruptedError(
                 in: container,
-                debugDescription: "Cannot decode date string \(dateString)"
+                debugDescription: "Cannot decode date value"
             )
         }
     }
@@ -100,9 +117,10 @@ class APIClient {
                 let apiError: APIError
                 if let err = error as? APIError {
                     apiError = err
-                } else if error is DecodingError {
-                    Logger.network.error("Decoding error: \(error.localizedDescription)")
-                    apiError = .decodingError(error)
+                } else if let decodingError = error as? DecodingError {
+                    Logger.network.error("Decoding error: \(decodingError.localizedDescription)")
+                    Logger.network.error("Decoding error detail: \(String(describing: decodingError))")
+                    apiError = .decodingError(decodingError)
                 } else {
                     Logger.network.error("Network error: \(error.localizedDescription)")
                     apiError = .networkError(error)

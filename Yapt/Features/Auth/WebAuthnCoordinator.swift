@@ -14,6 +14,7 @@ import OSLog
 @MainActor
 class WebAuthnCoordinator: NSObject, ObservableObject {
     private var continuation: CheckedContinuation<AuthenticationResponseJSON, Error>?
+    private weak var presentationAnchorWindow: UIWindow?
 
     /// Perform passkey authentication
     func authenticate(options: PublicKeyCredentialRequestOptions) async throws -> AuthenticationResponseJSON {
@@ -26,6 +27,13 @@ class WebAuthnCoordinator: NSObject, ObservableObject {
                 continuation.resume(throwing: WebAuthnError.invalidChallenge)
                 return
             }
+
+            guard let presentationAnchor = resolvePresentationAnchor() else {
+                Logger.auth.error("No window scene available for passkey presentation")
+                continuation.resume(throwing: WebAuthnError.presentationAnchorUnavailable)
+                return
+            }
+            self.presentationAnchorWindow = presentationAnchor
 
             let rpID = options.rpId ?? Constants.WebAuthn.rpID
 
@@ -76,6 +84,27 @@ class WebAuthnCoordinator: NSObject, ObservableObject {
             controller.performRequests()
         }
     }
+
+    private func resolvePresentationAnchor() -> UIWindow? {
+        let scenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+
+        if let foregroundWindow = scenes
+            .first(where: { $0.activationState == .foregroundActive })?
+            .windows
+            .first(where: { $0.isKeyWindow }) {
+            return foregroundWindow
+        }
+
+        if let foregroundAnyWindow = scenes
+            .first(where: { $0.activationState == .foregroundActive })?
+            .windows
+            .first {
+            return foregroundAnyWindow
+        }
+
+        return scenes.first?.windows.first
+    }
 }
 
 // MARK: - ASAuthorizationControllerDelegate
@@ -101,6 +130,7 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
             }
 
             continuation = nil
+            presentationAnchorWindow = nil
         }
     }
 
@@ -154,6 +184,7 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
             }
 
             continuation = nil
+            presentationAnchorWindow = nil
         }
     }
 
@@ -181,25 +212,12 @@ extension WebAuthnCoordinator: ASAuthorizationControllerDelegate {
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension WebAuthnCoordinator: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Get the first foreground active window
-        if let scene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-           let window = scene.windows.first {
-            return window
+        if let anchor = presentationAnchorWindow {
+            return anchor
         }
 
-        // Fallback: use any available window scene
-        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            if let window = scene.windows.first {
-                return window
-            }
-            // Create a new window with the scene (avoids deprecated init())
-            return UIWindow(windowScene: scene)
-        }
-
-        // Last resort: should not happen in normal app lifecycle
-        Logger.auth.error("No window scene available for passkey presentation")
-        fatalError("No window scene available for passkey presentation")
+        Logger.auth.error("Missing cached presentation anchor for passkey")
+        return UIWindow()
     }
 }
 
@@ -207,6 +225,7 @@ extension WebAuthnCoordinator: ASAuthorizationControllerPresentationContextProvi
 enum WebAuthnError: LocalizedError {
     case invalidChallenge
     case invalidCredentialType
+    case presentationAnchorUnavailable
     case userCanceled
     case authenticationFailed
     case notHandled
@@ -218,6 +237,8 @@ enum WebAuthnError: LocalizedError {
             return "Invalid authentication challenge"
         case .invalidCredentialType:
             return "Invalid credential type"
+        case .presentationAnchorUnavailable:
+            return "Unable to present authentication UI"
         case .userCanceled:
             return "Authentication was canceled"
         case .authenticationFailed:

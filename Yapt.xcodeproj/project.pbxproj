@@ -6,12 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		F8A1000A2F00000100A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F79218EF2ECC9021000DA6D7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F79218F62ECC9021000DA6D7;
+			remoteInfo = Yapt;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		F79218F72ECC9021000DA6D7 /* Yapt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7A274032ECC91BD007D3DFA /* Yapt.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Yapt.xcodeproj; sourceTree = "<group>"; };
+		F8A100012F00000100A1B2C3 /* YaptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YaptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,10 +41,22 @@
 			path = Yapt;
 			sourceTree = "<group>";
 		};
+		F8A100022F00000100A1B2C3 /* YaptTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = YaptTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		F79218F42ECC9021000DA6D7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F8A100032F00000100A1B2C3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -50,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				F79218F92ECC9021000DA6D7 /* Yapt */,
+				F8A100022F00000100A1B2C3 /* YaptTests */,
 				F79218F82ECC9021000DA6D7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -58,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				F79218F72ECC9021000DA6D7 /* Yapt.app */,
+				F8A100012F00000100A1B2C3 /* YaptTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -94,6 +116,29 @@
 			productReference = F79218F72ECC9021000DA6D7 /* Yapt.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F8A100062F00000100A1B2C3 /* YaptTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F8A100072F00000100A1B2C3 /* Build configuration list for PBXNativeTarget "YaptTests" */;
+			buildPhases = (
+				F8A100042F00000100A1B2C3 /* Sources */,
+				F8A100032F00000100A1B2C3 /* Frameworks */,
+				F8A100052F00000100A1B2C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F8A1000B2F00000100A1B2C3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F8A100022F00000100A1B2C3 /* YaptTests */,
+			);
+			name = YaptTests;
+			packageProductDependencies = (
+			);
+			productName = YaptTests;
+			productReference = F8A100012F00000100A1B2C3 /* YaptTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -106,6 +151,10 @@
 				TargetAttributes = {
 					F79218F62ECC9021000DA6D7 = {
 						CreatedOnToolsVersion = 26.1.1;
+					};
+					F8A100062F00000100A1B2C3 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = F79218F62ECC9021000DA6D7;
 					};
 				};
 			};
@@ -130,12 +179,20 @@
 			projectRoot = "";
 			targets = (
 				F79218F62ECC9021000DA6D7 /* Yapt */,
+				F8A100062F00000100A1B2C3 /* YaptTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F79218F52ECC9021000DA6D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F8A100052F00000100A1B2C3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -152,7 +209,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F8A100042F00000100A1B2C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F8A1000B2F00000100A1B2C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F79218F62ECC9021000DA6D7 /* Yapt */;
+			targetProxy = F8A1000A2F00000100A1B2C3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F79219162ECC9022000DA6D7 /* Debug */ = {
@@ -481,6 +553,82 @@
 			};
 			name = "Debug-mock";
 		};
+		F8A100082F00000100A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9626BEV4Z4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yapt.YaptTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F8A100092F00000100A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9626BEV4Z4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yapt.YaptTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F8A1000C2F00000100A1B2C3 /* Debug-mock */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9626BEV4Z4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "-D MOCK_API";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yapt.YaptTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Debug-mock";
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -500,6 +648,16 @@
 				F79219192ECC9022000DA6D7 /* Debug */,
 				F7A274CE2ECDCDA2007D3DFA /* Debug-mock */,
 				F792191A2ECC9022000DA6D7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F8A100072F00000100A1B2C3 /* Build configuration list for PBXNativeTarget "YaptTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F8A100082F00000100A1B2C3 /* Debug */,
+				F8A1000C2F00000100A1B2C3 /* Debug-mock */,
+				F8A100092F00000100A1B2C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

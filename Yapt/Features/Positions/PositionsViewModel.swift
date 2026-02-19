@@ -18,7 +18,7 @@ class PositionsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let positionService: PositionService
-    private var cancellables = Set<AnyCancellable>()
+    private var loadCancellable: AnyCancellable?
 
     init(positionService: PositionService) {
         self.positionService = positionService
@@ -30,11 +30,13 @@ class PositionsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        positionService.fetchPositions()
+        loadCancellable?.cancel()
+        loadCancellable = positionService.fetchPositions()
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to load positions: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -46,7 +48,6 @@ class PositionsViewModel: ObservableObject {
                     Logger.ui.debug("Loaded \(response.positions.count) positions")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func refresh() {
@@ -55,11 +56,13 @@ class PositionsViewModel: ObservableObject {
         isRefreshing = true
         errorMessage = nil
 
-        positionService.fetchPositions(forceRefresh: true)
+        loadCancellable?.cancel()
+        loadCancellable = positionService.fetchPositions(forceRefresh: true)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isRefreshing = false
+                    self?.loadCancellable = nil
                     if case .failure(let error) = completion {
                         Logger.ui.error("Failed to refresh positions: \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
@@ -71,7 +74,6 @@ class PositionsViewModel: ObservableObject {
                     Logger.ui.debug("Refreshed positions")
                 }
             )
-            .store(in: &cancellables)
     }
 
     func clearError() {

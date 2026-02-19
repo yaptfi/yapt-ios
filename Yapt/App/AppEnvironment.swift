@@ -25,8 +25,11 @@ class AppEnvironment: ObservableObject {
     let notificationService: NotificationService
     let pushNotificationService: PushNotificationService
     let portfolioValueCache: PortfolioValueCache
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
+        let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
         // Initialize core services
         #if MOCK_API
         // Mock mode: Use MockAPIClient instead of real APIClient
@@ -50,7 +53,39 @@ class AppEnvironment: ObservableObject {
         self.positionService = PositionService(apiClient: apiClient)
         self.walletService = WalletService(apiClient: apiClient, sseClient: sseClient)
         self.notificationService = NotificationService(apiClient: apiClient)
-        self.pushNotificationService = PushNotificationService(notificationService: notificationService)
+        self.pushNotificationService = PushNotificationService(
+            notificationService: notificationService,
+            registerAsNotificationDelegate: !isRunningTests
+        )
         self.portfolioValueCache = PortfolioValueCache()
+
+        portfolioValueCache.setActiveUserID(sessionManager.currentUser?.id)
+        observeSessionState()
+    }
+
+    private func observeSessionState() {
+        sessionManager.$currentUser
+            .sink { [weak self] user in
+                self?.portfolioValueCache.setActiveUserID(user?.id)
+            }
+            .store(in: &cancellables)
+
+        sessionManager.$isAuthenticated
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] isAuthenticated in
+                guard let self, !isAuthenticated else { return }
+                clearSessionScopedState()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func clearSessionScopedState() {
+        sseClient.stopStreaming()
+        portfolioService.clearCache()
+        positionService.clearCache()
+        walletService.clearCache()
+        notificationService.clearCache()
+        portfolioValueCache.clearAllValues()
     }
 }

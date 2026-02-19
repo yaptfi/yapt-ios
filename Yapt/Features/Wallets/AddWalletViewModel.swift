@@ -26,7 +26,7 @@ class AddWalletViewModel: ObservableObject {
 
     // MARK: - Dependencies
     private let walletService: WalletService
-    private var cancellables = Set<AnyCancellable>()
+    private var discoveryCancellable: AnyCancellable?
 
     init(walletService: WalletService) {
         self.walletService = walletService
@@ -92,11 +92,13 @@ class AddWalletViewModel: ObservableObject {
         isDiscovering = true
 
         // Start discovery stream
-        walletService.addWallet(address: trimmedAddress, label: finalLabel)
+        discoveryCancellable?.cancel()
+        discoveryCancellable = walletService.addWallet(address: trimmedAddress, label: finalLabel)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     guard let self = self else { return }
+                    self.discoveryCancellable = nil
 
                     switch completion {
                     case .finished:
@@ -115,7 +117,6 @@ class AddWalletViewModel: ObservableObject {
                     self.handleDiscoveryEvent(event)
                 }
             )
-            .store(in: &cancellables)
     }
 
     private func handleDiscoveryEvent(_ event: DiscoveryEvent) {
@@ -222,6 +223,7 @@ class AddWalletViewModel: ObservableObject {
         progress = nil
         discoveryResult = nil
         isDiscovering = false
-        cancellables.removeAll()
+        discoveryCancellable?.cancel()
+        discoveryCancellable = nil
     }
 }

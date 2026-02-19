@@ -11,8 +11,7 @@ import OSLog
 
 class PortfolioService {
     private let apiClient: APIClient
-    private var cachedSummary: PortfolioSummary?
-    private var lastFetchTime: Date?
+    private let summaryCache = TimedMemoryCache<PortfolioSummary>()
 
     init(apiClient: APIClient) {
         self.apiClient = apiClient
@@ -22,9 +21,7 @@ class PortfolioService {
     func fetchSummary(forceRefresh: Bool = false) -> AnyPublisher<PortfolioSummary, APIError> {
         // Check cache
         if !forceRefresh,
-           let cached = cachedSummary,
-           let lastFetch = lastFetchTime,
-           Date().timeIntervalSince(lastFetch) < Constants.Cache.portfolioTTL {
+           let cached = summaryCache.valueIfValid(ttl: Constants.Cache.portfolioTTL) {
             Logger.cache.debug("Returning cached portfolio summary")
             return Just(cached)
                 .setFailureType(to: APIError.self)
@@ -37,8 +34,7 @@ class PortfolioService {
         return apiClient.request(endpoint)
             .handleEvents(
                 receiveOutput: { [weak self] (summary: PortfolioSummary) in
-                    self?.cachedSummary = summary
-                    self?.lastFetchTime = Date()
+                    self?.summaryCache.store(summary)
                     Logger.cache.debug("Cached portfolio summary")
                 }
             )
@@ -46,7 +42,6 @@ class PortfolioService {
     }
 
     func clearCache() {
-        cachedSummary = nil
-        lastFetchTime = nil
+        summaryCache.clear()
     }
 }
