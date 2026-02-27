@@ -7,6 +7,7 @@
 
 import Foundation
 
+
 // MARK: - Notification Log
 
 struct NotificationLog: Codable, Identifiable, Equatable {

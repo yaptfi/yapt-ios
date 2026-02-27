@@ -12,17 +12,25 @@ struct NotificationSettingsView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: NotificationSettingsViewModel
     @ObservedObject private var pushService: PushNotificationService
+    @ObservedObject private var positionChangeSettings: PositionChangeSettings
     @FocusState private var focusedField: FocusedField?
 
+    @State private var thresholdText: String = ""
+
     private enum FocusedField {
-        case depegLower, depegUpper, depegSymbols, apyThreshold
+        case depegLower, depegUpper, depegSymbols, apyThreshold, changeThreshold
     }
 
-    init(notificationService: NotificationService, pushService: PushNotificationService) {
+    init(
+        notificationService: NotificationService,
+        pushService: PushNotificationService,
+        positionChangeSettings: PositionChangeSettings
+    ) {
         _viewModel = StateObject(wrappedValue: NotificationSettingsViewModel(
             notificationService: notificationService
         ))
         self.pushService = pushService
+        self.positionChangeSettings = positionChangeSettings
     }
 
     var body: some View {
@@ -41,6 +49,7 @@ struct NotificationSettingsView: View {
             .onAppear {
                 viewModel.loadSettings()
                 pushService.refreshAuthorizationStatus()
+                thresholdText = String(Int(positionChangeSettings.threshold * 100))
             }
         }
     }
@@ -168,6 +177,45 @@ struct NotificationSettingsView: View {
                 }
             } footer: {
                 Text("Get notified when position APY drops below your threshold")
+            }
+
+            // Position Changes Section
+            Section {
+                Toggle("Enable Position Change Alerts", isOn: $positionChangeSettings.enabled)
+
+                if positionChangeSettings.enabled {
+                    HStack {
+                        Text("Change Threshold")
+                        Spacer()
+                        HStack(spacing: 4) {
+                            TextField("20", text: $thresholdText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .focused($focusedField, equals: .changeThreshold)
+                                .onChange(of: thresholdText) {
+                                    if let value = Double(thresholdText) {
+                                        positionChangeSettings.threshold = value / 100.0
+                                    }
+                                }
+                            Text("%")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        focusedField = .changeThreshold
+                    }
+                    Text("Alert when a position changes by more than this percentage")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } header: {
+                HStack {
+                    Image(systemName: "arrow.left.arrow.right.circle.fill")
+                    Text("Position Changes")
+                }
+            } footer: {
+                Text("Get notified when positions are added, exited, or change significantly in value")
             }
 
             // Save Button
@@ -341,9 +389,10 @@ struct NotificationSettingsView: View {
 
 #Preview {
     let env = AppEnvironment()
-    return NotificationSettingsView(
+    NotificationSettingsView(
         notificationService: env.notificationService,
-        pushService: env.pushNotificationService
+        pushService: env.pushNotificationService,
+        positionChangeSettings: env.positionChangeSettings
     )
     .environmentObject(env)
 }

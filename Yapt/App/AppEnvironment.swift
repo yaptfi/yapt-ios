@@ -25,6 +25,7 @@ class AppEnvironment: ObservableObject {
     let notificationService: NotificationService
     let pushNotificationService: PushNotificationService
     let portfolioValueCache: PortfolioValueCache
+    let positionChangeSettings: PositionChangeSettings
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -50,7 +51,8 @@ class AppEnvironment: ObservableObject {
         // Initialize feature services (work with both real and mock APIClient)
         self.authService = AuthService(apiClient: apiClient, sessionManager: sessionManager)
         self.portfolioService = PortfolioService(apiClient: apiClient)
-        self.positionService = PositionService(apiClient: apiClient)
+        self.positionChangeSettings = PositionChangeSettings()
+        self.positionService = PositionService(apiClient: apiClient, changeSettings: positionChangeSettings)
         self.walletService = WalletService(apiClient: apiClient, sseClient: sseClient)
         self.notificationService = NotificationService(apiClient: apiClient)
         self.pushNotificationService = PushNotificationService(

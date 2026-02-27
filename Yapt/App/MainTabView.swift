@@ -26,7 +26,10 @@ struct MainTabView: View {
                     Label("Wallets", systemImage: "wallet.pass")
                 }
 
-            PositionsListView(positionService: appEnvironment.positionService)
+            PositionsListView(
+                positionService: appEnvironment.positionService,
+                positionChangeSettings: appEnvironment.positionChangeSettings
+            )
                 .tabItem {
                     Label("Positions", systemImage: "list.bullet.rectangle")
                 }

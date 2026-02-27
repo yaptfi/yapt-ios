@@ -11,9 +11,10 @@ struct PositionsListView: View {
     @EnvironmentObject var appEnvironment: AppEnvironment
     @StateObject private var viewModel: PositionsViewModel
 
-    init(positionService: PositionService) {
+    init(positionService: PositionService, positionChangeSettings: PositionChangeSettings) {
         _viewModel = StateObject(wrappedValue: PositionsViewModel(
-            positionService: positionService
+            positionService: positionService,
+            positionChangeSettings: positionChangeSettings
         ))
     }
 
@@ -40,26 +41,34 @@ struct PositionsListView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        List {
-            // Positions Section
-            Section {
-                ForEach(viewModel.positions) { position in
-                    PositionDetailRow(position: position)
+        VStack(spacing: 0) {
+            if !viewModel.pendingChanges.isEmpty {
+                PositionChangeBannerView(changes: viewModel.pendingChanges) {
+                    viewModel.dismissChanges()
                 }
-            } header: {
-                Text("All Positions (\(viewModel.positions.count))")
             }
 
-            if let errorMessage = viewModel.errorMessage {
+            List {
+                // Positions Section
                 Section {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
+                    ForEach(viewModel.positions) { position in
+                        PositionDetailRow(position: position)
+                    }
+                } header: {
+                    Text("All Positions (\(viewModel.positions.count))")
+                }
+
+                if let errorMessage = viewModel.errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
                 }
             }
-        }
-        .refreshable {
-            viewModel.refresh()
+            .refreshable {
+                viewModel.refresh()
+            }
         }
     }
 
@@ -277,6 +286,9 @@ struct MetricColumn: View {
 
 #Preview {
     let env = AppEnvironment()
-    return PositionsListView(positionService: env.positionService)
-        .environmentObject(env)
+    PositionsListView(
+        positionService: env.positionService,
+        positionChangeSettings: env.positionChangeSettings
+    )
+    .environmentObject(env)
 }

@@ -83,7 +83,7 @@ struct SettingsView: View {
 
                 // Notifications Section (Phase 3)
                 Section {
-                    NavigationLink(destination: NotificationSettingsView(notificationService: appEnvironment.notificationService, pushService: appEnvironment.pushNotificationService)) {
+                    NavigationLink(destination: NotificationSettingsView(notificationService: appEnvironment.notificationService, pushService: appEnvironment.pushNotificationService, positionChangeSettings: appEnvironment.positionChangeSettings)) {
                         Label("Notification Settings", systemImage: "bell.badge")
                     }
 

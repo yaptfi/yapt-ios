@@ -16,12 +16,23 @@ class PositionsViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isRefreshing: Bool = false
     @Published var errorMessage: String?
+    @Published var pendingChanges: [PositionChangeAlert] = []
 
     private let positionService: PositionService
+    private let positionChangeSettings: PositionChangeSettings
     private var loadCancellable: AnyCancellable?
+    private var changesCancellable: AnyCancellable?
 
-    init(positionService: PositionService) {
+    init(positionService: PositionService, positionChangeSettings: PositionChangeSettings) {
         self.positionService = positionService
+        self.positionChangeSettings = positionChangeSettings
+
+        changesCancellable = positionService.positionChanges
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] changes in
+                guard self?.positionChangeSettings.enabled == true else { return }
+                self?.pendingChanges = changes
+            }
     }
 
     func loadPositions() {
@@ -78,5 +89,9 @@ class PositionsViewModel: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func dismissChanges() {
+        pendingChanges = []
     }
 }
