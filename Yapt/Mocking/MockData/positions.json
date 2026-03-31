@@ -13,6 +13,7 @@
       "estMonthlyUsd": 174.66,
       "estYearlyUsd": 2095.89,
       "measureMethod": "balance",
+      "positionType": "savings",
       "countingMode": "count",
       "absoluteYield": null,
       "lastUpdated": "2024-11-19T08:45:00.000Z"
@@ -30,6 +31,7 @@
       "estMonthlyUsd": 90.36,
       "estYearlyUsd": 1084.32,
       "measureMethod": "balance",
+      "positionType": "fixed-income",
       "countingMode": "count",
       "absoluteYield": null,
       "lastUpdated": "2024-11-19T08:45:00.000Z"
@@ -53,6 +55,7 @@
       "estMonthlyUsd": 373.50,
       "estYearlyUsd": 4482.00,
       "measureMethod": "rewards",
+      "positionType": "rewards",
       "countingMode": "ignore",
       "lastUpdated": "2024-11-19T08:45:00.000Z"
     },
@@ -69,6 +72,7 @@
       "estMonthlyUsd": 69.01,
       "estYearlyUsd": 828.11,
       "measureMethod": "balance",
+      "positionType": "savings",
       "countingMode": "count",
       "absoluteYield": null,
       "lastUpdated": "2024-11-19T08:45:00.000Z"

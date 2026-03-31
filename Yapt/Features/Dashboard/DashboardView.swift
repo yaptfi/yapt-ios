@@ -635,12 +635,12 @@ struct PositionRow<P: PositionDisplayable>: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                if position.hasAPY, let apy = position.apy {
+                if let apy = position.apy {
                     Text("\(apy.asPercentage()) APY")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                } else if position.isRewardBased {
-                    Text("Rewards-based")
+                } else if position.absoluteYield != nil {
+                    Text("Rewards")
                         .font(.caption)
                         .foregroundColor(.orange)
                 }

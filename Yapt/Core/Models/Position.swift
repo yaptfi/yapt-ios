@@ -8,47 +8,34 @@
 import Foundation
 
 // MARK: - Enums
-enum CountingMode: String, Codable {
-    case count
-    case partial
-    case ignore
-    case unknown
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(String.self)
-        self = CountingMode(rawValue: rawValue) ?? .unknown
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
-    }
-}
-
-enum MeasureMethod: String, Codable {
-    case exchangeRate
-    case balance
-    case rebaseIndex
-    case subgraph
+enum PositionType: String, Codable {
     case rewards
-    case lpPosition = "lp-position"
+    case savings
     case fixedIncome = "fixed-income"
-    case unknown
 
-    var isRewardBased: Bool {
+    var title: String {
+        switch self {
+        case .rewards:
+            return "Rewards"
+        case .savings:
+            return "Savings"
+        case .fixedIncome:
+            return "Fixed Income"
+        }
+    }
+
+    var isRewardsBased: Bool {
         self == .rewards
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
-        self = MeasureMethod(rawValue: rawValue) ?? .unknown
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
+        if let value = PositionType(rawValue: rawValue) {
+            self = value
+        } else {
+            self = .savings
+        }
     }
 }
 
@@ -60,8 +47,8 @@ struct Position: Codable, Identifiable, Equatable, PositionDisplayable {
     let walletId: UUID
     let displayName: String
     let baseAsset: String
-    let countingMode: CountingMode
-    let measureMethod: MeasureMethod
+    let countingMode: String
+    let positionType: PositionType
     let valueUsd: Double
     let lastUpdated: Date?
 
@@ -77,8 +64,6 @@ struct Position: Codable, Identifiable, Equatable, PositionDisplayable {
 
     // Absolute yield - only present for reward-based positions
     let absoluteYield: AbsoluteYield?
-
-    // PositionDisplayable conformance provides isRewardBased and hasAPY
 }
 
 // MARK: - Nested Types

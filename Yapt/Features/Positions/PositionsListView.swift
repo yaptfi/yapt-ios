@@ -139,14 +139,6 @@ struct PositionDetailRow: View {
                             .background(Color.blue.opacity(0.2))
                             .foregroundColor(.blue)
                             .cornerRadius(4)
-
-                        Text(position.countingMode.rawValue)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 2)
-                            .background(Color.gray.opacity(0.2))
-                            .foregroundColor(.secondary)
-                            .cornerRadius(4)
                     }
                 }
 
@@ -159,8 +151,8 @@ struct PositionDetailRow: View {
 
             Divider()
 
-            // Metrics - Different display based on measure method
-            if position.isRewardBased {
+            // Metrics - Different display based on position type
+            if position.positionType.isRewardsBased {
                 // Rewards-based position - show absolute yields, NO APY
                 rewardBasedMetrics(position)
             } else {
@@ -174,34 +166,24 @@ struct PositionDetailRow: View {
     @ViewBuilder
     private func rewardBasedMetrics(_ position: Position) -> some View {
         VStack(spacing: 8) {
-            HStack {
-                Image(systemName: "gift")
-                    .foregroundColor(.orange)
-                Text("Rewards-Based Position")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-                    .fontWeight(.medium)
-                Spacer()
-            }
+            positionTypeBadge(for: position)
 
-            if let absoluteYield = position.absoluteYield {
-                VStack(spacing: 6) {
-                    MetricRow(
-                        label: "Avg Daily Yield",
-                        value: absoluteYield.avgDailyYield.asCurrency(),
-                        color: .green
-                    )
-                    MetricRow(
-                        label: "Projected Monthly",
-                        value: absoluteYield.projectedMonthlyYield.asCurrency(),
-                        color: .green
-                    )
-                    MetricRow(
-                        label: "Projected Yearly",
-                        value: absoluteYield.projectedYearlyYield.asCurrency(),
-                        color: .green
-                    )
-                }
+            VStack(spacing: 6) {
+                MetricRow(
+                    label: "Projected Daily",
+                    value: position.estDailyUsd.asCurrency(),
+                    color: .green
+                )
+                MetricRow(
+                    label: "Projected Monthly",
+                    value: position.estMonthlyUsd.asCurrency(),
+                    color: .green
+                )
+                MetricRow(
+                    label: "Projected Yearly",
+                    value: position.estYearlyUsd.asCurrency(),
+                    color: .green
+                )
             }
         }
     }
@@ -209,6 +191,8 @@ struct PositionDetailRow: View {
     @ViewBuilder
     private func apyBasedMetrics(_ position: Position) -> some View {
         VStack(spacing: 8) {
+            positionTypeBadge(for: position)
+
             // APY Section
             if position.hasAPY {
                 HStack(spacing: 16) {
@@ -243,6 +227,32 @@ struct PositionDetailRow: View {
                     color: .green
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private func positionTypeBadge(for position: Position) -> some View {
+        let badge = badgeConfiguration(for: position.positionType)
+
+        HStack {
+            Image(systemName: badge.iconName)
+                .foregroundColor(badge.color)
+            Text(position.positionType.title)
+                .font(.caption)
+                .foregroundColor(badge.color)
+                .fontWeight(.medium)
+            Spacer()
+        }
+    }
+
+    private func badgeConfiguration(for type: PositionType) -> (iconName: String, color: Color) {
+        switch type {
+        case .rewards:
+            return ("gift", .orange)
+        case .savings:
+            return ("banknote", .blue)
+        case .fixedIncome:
+            return ("lock.fill", .indigo)
         }
     }
 }

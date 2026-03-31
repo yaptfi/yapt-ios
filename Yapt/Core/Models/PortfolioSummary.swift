@@ -27,9 +27,7 @@ struct PortfolioSummary: Codable, Equatable {
 protocol PositionDisplayable {
     var id: UUID { get }
     var displayName: String { get }
-    var measureMethod: MeasureMethod { get }
     var valueUsd: Double { get }
-    var countingMode: CountingMode { get }
     var estDailyUsd: Double { get }
     var estMonthlyUsd: Double { get }
     var estYearlyUsd: Double { get }
@@ -40,12 +38,8 @@ protocol PositionDisplayable {
 }
 
 extension PositionDisplayable {
-    var isRewardBased: Bool {
-        measureMethod.isRewardBased
-    }
-
     var hasAPY: Bool {
-        apy != nil && !isRewardBased
+        apy != nil
     }
 }
 
@@ -55,9 +49,7 @@ extension PositionDisplayable {
 struct PortfolioPosition: Codable, Equatable, Identifiable, PositionDisplayable {
     let id: UUID
     let displayName: String
-    let measureMethod: MeasureMethod
     let valueUsd: Double
-    let countingMode: CountingMode
     let estDailyUsd: Double
     let estMonthlyUsd: Double
     let estYearlyUsd: Double
