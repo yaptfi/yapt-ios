@@ -142,18 +142,45 @@ struct WalletDetailView: View {
                         ProgressView("Starting rescan...")
                             .padding()
                     }
-                } else {
+                } else if viewModel.errorMessage == nil {
                     // Rescan complete
                     VStack(spacing: 16) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: viewModel.failedProtocols.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                             .font(.system(size: 64))
-                            .foregroundColor(.green)
+                            .foregroundColor(viewModel.failedProtocols.isEmpty ? .green : .orange)
 
                         Text("Rescan Complete")
                             .font(.title2)
                             .fontWeight(.bold)
 
-                        Text("Positions have been updated")
+                        if let totalPositions = viewModel.rescanTotalPositions {
+                            Text("Found \(totalPositions) position\(totalPositions == 1 ? "" : "s")")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Positions have been updated")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+
+                        if !viewModel.failedProtocols.isEmpty {
+                            Text("\(viewModel.failedProtocols.count) protocol\(viewModel.failedProtocols.count == 1 ? "" : "s") could not be scanned")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(.red)
+
+                        Text("Rescan Failed")
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        Text("No completed scan result was received")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }

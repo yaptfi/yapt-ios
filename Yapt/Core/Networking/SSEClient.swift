@@ -17,6 +17,11 @@ class SSEClient: NSObject, ObservableObject {
     private var task: URLSessionDataTask?
     private var eventSubject = PassthroughSubject<String, APIError>()
     private var buffer = Data()
+    private var errorResponseBody = Data()
+    private var hasCompletedStream = false
+
+    /// Global error handler for authentication failures received before an SSE stream starts.
+    weak var errorHandler: ErrorHandler?
 
     /// Publisher that emits SSE event data as JSON strings
     var events: AnyPublisher<String, APIError> {
@@ -26,6 +31,9 @@ class SSEClient: NSObject, ObservableObject {
     override init() {
         super.init()
         let configuration = URLSessionConfiguration.default
+        configuration.httpCookieStorage = .shared
+        configuration.httpCookieAcceptPolicy = .always
+        configuration.httpShouldSetCookies = true
         configuration.timeoutIntervalForRequest = .infinity
         configuration.timeoutIntervalForResource = .infinity
         self.session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
@@ -34,9 +42,42 @@ class SSEClient: NSObject, ObservableObject {
     /// Start streaming from an SSE endpoint
     /// - Parameter request: URLRequest configured for SSE endpoint
     func startStreaming(request: URLRequest) {
+        guard prepareStreaming(request: request) else { return }
+        task?.resume()
+    }
+
+    /// Create a stream that connects only after a subscriber is attached.
+    func stream(request: URLRequest) -> AnyPublisher<String, APIError> {
+        Deferred { [weak self] () -> AnyPublisher<String, APIError> in
+            guard let self else {
+                return Fail(error: APIError.unknown).eraseToAnyPublisher()
+            }
+
+            guard self.prepareStreaming(request: request) else {
+                return Fail(
+                    error: APIError.eventStreamError("Another event stream is already active")
+                )
+                .eraseToAnyPublisher()
+            }
+
+            return self.eventSubject
+                .handleEvents(
+                    receiveSubscription: { [weak self] _ in
+                        self?.task?.resume()
+                    },
+                    receiveCancel: { [weak self] in
+                        self?.stopStreaming()
+                    }
+                )
+                .eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
+    }
+
+    private func prepareStreaming(request: URLRequest) -> Bool {
         guard task == nil else {
             Logger.network.warning("SSE stream already active, ignoring startStreaming call")
-            return
+            return false
         }
 
         var sseRequest = request
@@ -47,10 +88,12 @@ class SSEClient: NSObject, ObservableObject {
         // Recreate it for each new stream so new subscribers receive events.
         eventSubject = PassthroughSubject<String, APIError>()
         buffer = Data()
+        errorResponseBody = Data()
+        hasCompletedStream = false
         task = session?.dataTask(with: sseRequest)
 
         Logger.network.info("Starting SSE stream to: \(sseRequest.url?.absoluteString ?? "unknown")")
-        task?.resume()
+        return task != nil
     }
 
     /// Stop the active SSE stream
@@ -59,8 +102,6 @@ class SSEClient: NSObject, ObservableObject {
 
         Logger.network.info("Stopping SSE stream")
         task?.cancel()
-        task = nil
-        buffer = Data()
     }
 
     /// Parse buffered data for complete SSE messages
@@ -87,7 +128,7 @@ class SSEClient: NSObject, ObservableObject {
     }
 
     /// Process a single SSE line
-    private func processLine(_ line: String) {
+    func processLine(_ line: String) {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         // Skip empty lines and comments
@@ -112,6 +153,38 @@ class SSEClient: NSObject, ObservableObject {
         // Ignore other SSE fields (event:, id:, retry:) for now
     }
 
+    private func finishStream(with completion: Subscribers.Completion<APIError>) {
+        guard !hasCompletedStream else { return }
+        hasCompletedStream = true
+
+        if case .failure(let error) = completion {
+            _ = errorHandler?.handle(error)
+        }
+
+        eventSubject.send(completion: completion)
+    }
+
+    func errorForHTTPResponse(statusCode: Int, body: Data) -> APIError {
+        struct ErrorResponse: Decodable {
+            let error: String
+        }
+
+        let message = try? JSONDecoder().decode(ErrorResponse.self, from: body).error
+
+        switch statusCode {
+        case 401:
+            return .unauthorized
+        case 403:
+            return .forbidden
+        case 404 where message == nil:
+            return .notFound
+        case 409:
+            return .conflict(message ?? "Resource conflict")
+        default:
+            return .serverError(statusCode, message)
+        }
+    }
+
     nonisolated deinit {
         task?.cancel()
         session?.invalidateAndCancel()
@@ -127,6 +200,9 @@ extension SSEClient: URLSessionDataDelegate {
         completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
     ) {
         guard let httpResponse = response as? HTTPURLResponse else {
+            Task { @MainActor in
+                self.finishStream(with: .failure(.invalidResponse))
+            }
             completionHandler(.cancel)
             return
         }
@@ -135,11 +211,17 @@ extension SSEClient: URLSessionDataDelegate {
         let statusCode = httpResponse.statusCode
         let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type")
 
-        // Check status code and content type
+        // Error responses have ordinary JSON bodies, so allow the body to arrive before failing.
         if statusCode != 200 {
+            completionHandler(.allow)
+            return
+        }
+
+        guard let contentType,
+              contentType.localizedCaseInsensitiveContains("text/event-stream") else {
             Task { @MainActor in
-                Logger.network.error("SSE stream failed with status \(statusCode)")
-                eventSubject.send(completion: .failure(.serverError(statusCode, "SSE connection failed")))
+                Logger.network.error("SSE response did not use text/event-stream")
+                self.finishStream(with: .failure(.invalidResponse))
             }
             completionHandler(.cancel)
             return
@@ -147,11 +229,6 @@ extension SSEClient: URLSessionDataDelegate {
 
         Task { @MainActor in
             Logger.network.info("SSE stream connected: status \(statusCode)")
-
-            // Verify content type
-            if let contentType = contentType, !contentType.contains("text/event-stream") {
-                Logger.network.warning("Unexpected content type for SSE: \(contentType)")
-            }
         }
 
         completionHandler(.allow)
@@ -162,9 +239,17 @@ extension SSEClient: URLSessionDataDelegate {
         dataTask: URLSessionDataTask,
         didReceive data: Data
     ) {
+        let statusCode = (dataTask.response as? HTTPURLResponse)?.statusCode
+
         Task { @MainActor in
-            buffer.append(data)
-            parseBuffer()
+            guard dataTask === self.task else { return }
+
+            if statusCode == 200 {
+                self.buffer.append(data)
+                self.parseBuffer()
+            } else {
+                self.errorResponseBody.append(data)
+            }
         }
     }
 
@@ -173,23 +258,47 @@ extension SSEClient: URLSessionDataDelegate {
         task: URLSessionTask,
         didCompleteWithError error: Error?
     ) {
+        let response = task.response
+        let httpResponse = response as? HTTPURLResponse
+        let statusCode = httpResponse?.statusCode
+        let contentType = httpResponse?.value(forHTTPHeaderField: "Content-Type")
+        let hasValidSSEContentType = contentType?.localizedCaseInsensitiveContains("text/event-stream") == true
+
         Task { @MainActor in
-            if let error = error {
+            guard task === self.task else { return }
+
+            if response != nil, httpResponse == nil {
+                self.finishStream(with: .failure(.invalidResponse))
+            } else if let statusCode, statusCode != 200 {
+                let apiError = self.errorForHTTPResponse(
+                    statusCode: statusCode,
+                    body: self.errorResponseBody
+                )
+                Logger.network.error("SSE request failed with status \(statusCode)")
+                self.finishStream(with: .failure(apiError))
+            } else if statusCode == 200, !hasValidSSEContentType {
+                self.finishStream(with: .failure(.invalidResponse))
+            } else if let error = error {
                 // Ignore cancellation errors (user-initiated)
                 if (error as NSError).code == NSURLErrorCancelled {
                     Logger.network.info("SSE stream cancelled by user")
-                    eventSubject.send(completion: .finished)
+                    self.finishStream(with: .finished)
                 } else {
                     Logger.network.error("SSE stream error: \(error.localizedDescription)")
-                    eventSubject.send(completion: .failure(.networkError(error)))
+                    self.finishStream(with: .failure(.networkError(error)))
                 }
             } else {
+                if !self.buffer.isEmpty,
+                   let finalLine = String(data: self.buffer, encoding: .utf8) {
+                    self.processLine(finalLine)
+                }
                 Logger.network.info("SSE stream completed successfully")
-                eventSubject.send(completion: .finished)
+                self.finishStream(with: .finished)
             }
 
             self.task = nil
             self.buffer = Data()
+            self.errorResponseBody = Data()
         }
     }
 }

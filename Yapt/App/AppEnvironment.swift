@@ -47,6 +47,7 @@ class AppEnvironment: ObservableObject {
 
         // Set error handler in APIClient for global error handling
         self.apiClient.errorHandler = errorHandler
+        self.sseClient.errorHandler = errorHandler
 
         // Initialize feature services (work with both real and mock APIClient)
         self.authService = AuthService(apiClient: apiClient, sessionManager: sessionManager)

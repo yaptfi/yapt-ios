@@ -210,6 +210,9 @@ class AddWalletViewModel: ObservableObject {
             self.errorMessage = errorMsg
             self.isDiscovering = false
             Logger.ui.error("Discovery error: \(errorMsg)")
+
+        case .status, .protocolError, .unknown:
+            break
         }
     }
 

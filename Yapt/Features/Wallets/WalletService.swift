@@ -10,6 +10,10 @@ import Combine
 import OSLog
 
 class WalletService {
+    private final class RescanCompletionState {
+        var didReceiveComplete = false
+    }
+
     private let apiClient: APIClient
     private let sseClient: SSEClient
     private let walletsCache = TimedMemoryCache<[Wallet]>()
@@ -70,32 +74,18 @@ class WalletService {
         let endpoint = APIEndpoint(path: "/api/wallets/discover", method: .post, body: bodyData)
 
         // Build URLRequest for SSE streaming
-        guard let urlRequest = try? apiClient.buildRequest(for: endpoint) else {
+        guard var urlRequest = try? apiClient.buildRequest(for: endpoint) else {
             return Fail(error: APIError.invalidURL)
                 .eraseToAnyPublisher()
         }
-
-        // Start SSE stream
-        sseClient.startStreaming(request: urlRequest)
+        urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
         // Convert SSE string events to DiscoveryEvent objects
-        return sseClient.events
-            .tryMap { jsonString -> DiscoveryEvent in
-                guard let data = jsonString.data(using: .utf8) else {
-                    throw APIError.decodingError(NSError(domain: "SSE", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert SSE data to UTF-8"]))
-                }
-
-                let decoder = JSONDecoder()
-                decoder.keyDecodingStrategy = .convertFromSnakeCase
-                decoder.dateDecodingStrategy = .iso8601
-
-                do {
-                    return try decoder.decode(DiscoveryEvent.self, from: data)
-                } catch {
-                    Logger.network.error("Failed to decode DiscoveryEvent: \(error.localizedDescription)")
-                    Logger.network.debug("JSON: \(jsonString)")
-                    throw APIError.decodingError(error)
-                }
+        return sseClient.stream(request: urlRequest)
+            .tryCompactMap { [weak self] jsonString -> DiscoveryEvent? in
+                guard let self else { throw APIError.unknown }
+                let event = try self.decodeDiscoveryEvent(jsonString)
+                return event.type == .unknown ? nil : event
             }
             .mapError { error in
                 if let apiError = error as? APIError {
@@ -129,31 +119,29 @@ class WalletService {
         let endpoint = APIEndpoint(path: "/api/wallets/\(walletId)/scan", method: .post)
 
         // Build URLRequest for SSE streaming
-        guard let urlRequest = try? apiClient.buildRequest(for: endpoint) else {
+        guard var urlRequest = try? apiClient.buildRequest(for: endpoint) else {
             return Fail(error: APIError.invalidURL)
                 .eraseToAnyPublisher()
         }
+        urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        urlRequest.setValue(nil, forHTTPHeaderField: "Content-Type")
 
-        // Start SSE stream
-        sseClient.startStreaming(request: urlRequest)
+        let completionState = RescanCompletionState()
 
         // Convert SSE string events to DiscoveryEvent objects
-        return sseClient.events
-            .tryMap { jsonString -> DiscoveryEvent in
-                guard let data = jsonString.data(using: .utf8) else {
-                    throw APIError.decodingError(NSError(domain: "SSE", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert SSE data to UTF-8"]))
-                }
+        return sseClient.stream(request: urlRequest)
+            .tryCompactMap { [weak self] jsonString -> DiscoveryEvent? in
+                guard let self else { throw APIError.unknown }
+                guard !completionState.didReceiveComplete else { return nil }
+                let event = try self.decodeDiscoveryEvent(jsonString)
 
-                let decoder = JSONDecoder()
-                decoder.keyDecodingStrategy = .convertFromSnakeCase
-                decoder.dateDecodingStrategy = .iso8601
-
-                do {
-                    return try decoder.decode(DiscoveryEvent.self, from: data)
-                } catch {
-                    Logger.network.error("Failed to decode DiscoveryEvent: \(error.localizedDescription)")
-                    Logger.network.debug("JSON: \(jsonString)")
-                    throw APIError.decodingError(error)
+                switch event.type {
+                case .unknown:
+                    return nil
+                case .error:
+                    throw APIError.eventStreamError(event.data.message ?? "The wallet rescan failed")
+                default:
+                    return event
                 }
             }
             .mapError { error in
@@ -162,6 +150,21 @@ class WalletService {
                 }
                 return APIError.decodingError(error)
             }
+            .handleEvents(receiveOutput: { [weak self] event in
+                guard event.type == .complete else { return }
+                completionState.didReceiveComplete = true
+                self?.sseClient.stopStreaming()
+            })
+            .append(Deferred {
+                if completionState.didReceiveComplete {
+                    return Empty<DiscoveryEvent, APIError>().eraseToAnyPublisher()
+                }
+
+                return Fail(
+                    error: APIError.eventStreamError("The wallet rescan ended before completion")
+                )
+                .eraseToAnyPublisher()
+            })
             .handleEvents(
                 receiveCompletion: { [weak self] completion in
                     // Clear cache when rescan completes
@@ -176,6 +179,29 @@ class WalletService {
                 }
             )
             .eraseToAnyPublisher()
+    }
+
+    private func decodeDiscoveryEvent(_ jsonString: String) throws -> DiscoveryEvent {
+        guard let data = jsonString.data(using: .utf8) else {
+            throw APIError.decodingError(
+                NSError(
+                    domain: "SSE",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to convert SSE data to UTF-8"]
+                )
+            )
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+
+        do {
+            return try decoder.decode(DiscoveryEvent.self, from: data)
+        } catch {
+            Logger.network.error("Failed to decode discovery event: \(error.localizedDescription)")
+            throw APIError.decodingError(error)
+        }
     }
 
     // MARK: - Delete Wallet

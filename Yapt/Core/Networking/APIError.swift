@@ -16,6 +16,7 @@ enum APIError: Error, LocalizedError {
     case notFound
     case conflict(String)
     case serverError(Int, String?)
+    case eventStreamError(String)
     case decodingError(Error)
     case unknown
 
@@ -37,6 +38,8 @@ enum APIError: Error, LocalizedError {
             return message
         case .serverError(let code, let message):
             return message ?? "Server error (\(code))"
+        case .eventStreamError(let message):
+            return message
         case .decodingError(let error):
             return "Failed to decode response: \(error.localizedDescription)"
         case .unknown:
